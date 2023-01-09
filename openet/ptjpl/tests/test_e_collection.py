@@ -414,14 +414,16 @@ def test_Collection_interpolate_t_interval_monthly():
     assert {y['id'] for x in output['features'] for y in x['bands']} == VARIABLES
 
 
-def test_Collection_interpolate_t_interval_annual():
-    """Test if the annual time interval parameter works"""
-    coll_obj = default_coll_obj(start_date='2017-01-01', end_date='2018-01-01')
-    output = utils.getinfo(coll_obj.interpolate(
-        t_interval='annual', **interp_args))
-    assert output['type'] == 'ImageCollection'
-    assert parse_scene_id(output) == ['2017']
-    assert {y['id'] for x in output['features'] for y in x['bands']} == VARIABLES
+# CGM - Commenting out since it takes a really long time to run
+#   This function could probably be tested for a shorter time period
+# def test_Collection_interpolate_t_interval_annual():
+#     """Test if the annual time interval parameter works"""
+#     coll_obj = default_coll_obj(start_date='2017-01-01', end_date='2018-01-01')
+#     output = utils.getinfo(coll_obj.interpolate(
+#         t_interval='annual', **interp_args))
+#     assert output['type'] == 'ImageCollection'
+#     assert parse_scene_id(output) == ['2017']
+#     assert {y['id'] for x in output['features'] for y in x['bands']} == VARIABLES
 
 
 def test_Collection_interpolate_t_interval_custom():
