@@ -1,0 +1,5 @@
+pytest>=4.0.0
+pytest-cov
+pytest-runner
+coverage
+codecov
