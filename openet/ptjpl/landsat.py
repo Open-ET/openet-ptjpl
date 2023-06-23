@@ -199,7 +199,8 @@ def lst(landsat_image):
     # Then recalculate emissivity corrected Ts
     thermal_rad_toa = ts_brightness.expression(
         'k1 / (exp(k2 / ts_brightness) - 1)',
-        {'ts_brightness': ts_brightness, 'k1': k1, 'k2': k2})
+        {'ts_brightness': ts_brightness, 'k1': k1, 'k2': k2}
+    )
 
     # tnb = 0.866   # narrow band transmissivity of air
     # rp = 0.91     # path radiance
@@ -209,10 +210,13 @@ def lst(landsat_image):
         {
             'thermal_rad_toa': thermal_rad_toa,
             'emiss': emissivity_img,
-            'rp': 0.91, 'tnb': 0.866, 'rsky': 1.32})
+            'rp': 0.91, 'tnb': 0.866, 'rsky': 1.32
+        }
+    )
     lst = rc.expression(
         'k2 / log(emiss * k1 / rc + 1)',
-        {'emiss': emissivity_img, 'rc': rc, 'k1': k1, 'k2': k2})
+        {'emiss': emissivity_img, 'rc': rc, 'k1': k1, 'k2': k2}
+    )
 
     return lst.rename(['lst'])
 

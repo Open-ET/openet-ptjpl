@@ -222,7 +222,8 @@ def from_scene_et_fraction(scene_coll, start_date, end_date, variables,
     daily_coll = openet.core.interpolate.daily(
         target_coll=daily_et_ref_coll,
         source_coll=scene_coll.select(interp_vars),
-        interp_method=interp_method, interp_days=interp_days,
+        interp_method=interp_method,
+        interp_days=interp_days,
         use_joins=use_joins,
         compute_product=False
     )
@@ -232,8 +233,7 @@ def from_scene_et_fraction(scene_coll, start_date, end_date, variables,
     # if 'et' in variables or 'et_fraction' in variables:
     def compute_et(img):
         """This function assumes ETr and ETf are present"""
-        et_img = img.select(['et_fraction'])\
-            .multiply(img.select(['et_reference']))
+        et_img = img.select(['et_fraction']).multiply(img.select(['et_reference']))
         return img.addBands(et_img.double().rename('et'))
     daily_coll = daily_coll.map(compute_et)
 

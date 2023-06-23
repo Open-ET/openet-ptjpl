@@ -559,8 +559,8 @@ class Collection():
                     raise ValueError(f'{et_reference_param} was not set')
 
             if type(self.model_args['et_reference_source']) is str:
-                # Assume a string source is an single image collection ID
-                #   not an list of collection IDs or ee.ImageCollection
+                # Assume a string source is a single image collection ID
+                #   not a list of collection IDs or ee.ImageCollection
                 daily_et_ref_coll_id = self.model_args['et_reference_source']
                 daily_et_ref_coll = ee.ImageCollection(daily_et_ref_coll_id) \
                     .filterDate(start_date, end_date) \
@@ -626,13 +626,15 @@ class Collection():
         # Build initial scene image collection
         scene_coll = self._build(
             variables=interp_vars, start_date=interp_start_date,
-            end_date=interp_end_date)
+            end_date=interp_end_date,
+        )
 
         # For count, compute the composite/mosaic image for the mask band only
         if 'count' in variables:
             aggregate_coll = interpolate.aggregate_to_daily(
                 image_coll=scene_coll.select(['mask']),
-                start_date=start_date, end_date=end_date)
+                start_date=start_date, end_date=end_date,
+            )
 
             # The following is needed because the aggregate collection can be
             #   empty if there are no scenes in the target date range but there
@@ -688,8 +690,10 @@ class Collection():
         daily_coll = interpolate.daily(
             target_coll=daily_target_coll.filterDate(start_date, end_date),
             source_coll=scene_coll.select(['et_norm', 'time']),
-            interp_method=interp_method, interp_days=interp_days,
-            use_joins=use_joins, compute_product=True,
+            interp_method=interp_method,
+            interp_days=interp_days,
+            use_joins=use_joins,
+            compute_product=True,
         )
         # pprint.pprint(daily_coll.first().getInfo())
         daily_coll = daily_coll.select(['et_norm_1'], ['et'])
