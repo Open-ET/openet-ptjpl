@@ -353,8 +353,8 @@ def test_Image_topt_sources(topt_source, xy, expected, tol=0.001):
 
 
 def test_Image_topt_floor(topt_source=15, ta_source=40, tol=0.001):
-    m = default_image_obj(topt_source=topt_source, ta_source=ta_source+273.15,
-                          floor_Topt=True)
+    m = default_image_obj(
+        topt_source=topt_source, ta_source=ta_source+273.15, floor_Topt=True)
     output = utils.point_image_value(ee.Image(m.Topt), TEST_POINT)
     assert abs(output - ta_source) <= tol
 
@@ -560,8 +560,7 @@ def test_Image_calculate_variables_custom():
 
 def test_Image_calculate_variables_all():
     variables = {'et', 'et_fraction', 'et_reference', 'mask', 'ndvi', 'time'}
-    output = utils.getinfo(default_image_obj().calculate(
-        variables=list(variables)))
+    output = utils.getinfo(default_image_obj().calculate(variables=list(variables)))
     assert set([x['id'] for x in output['bands']]) == variables
 
 
@@ -650,8 +649,7 @@ def test_Image_from_landsat_c1_sr_scaling():
               'system:id': ee.String(sr_img.get('system:id')),
               'system:index': ee.String(sr_img.get('system:index')),
               'system:time_start': ee.Number(sr_img.get('system:time_start'))})
-    output = utils.constant_image_value(
-        ptjpl.Image.from_landsat_c1_sr(input_img).LST)
+    output = utils.constant_image_value(ptjpl.Image.from_landsat_c1_sr(input_img).LST)
     # Won't be exact because of emissivity correction
     assert abs(output - 300) <= 10
 
@@ -697,12 +695,10 @@ def test_Image_from_landsat_c2_sr_scaling():
               'system:index': ee.String(sr_img.get('system:index')),
               'system:time_start': ee.Number(sr_img.get('system:time_start'))})
 
-    output = utils.constant_image_value(
-        ptjpl.Image.from_landsat_c2_sr(input_img).albedo)
+    output = utils.constant_image_value(ptjpl.Image.from_landsat_c2_sr(input_img).albedo)
     assert abs(output - 0.1) <= 0.01
 
-    output = utils.constant_image_value(
-        ptjpl.Image.from_landsat_c2_sr(input_img).LST)
+    output = utils.constant_image_value(ptjpl.Image.from_landsat_c2_sr(input_img).LST)
     assert abs(output - 300) <= 0.1
 
 
@@ -712,6 +708,32 @@ def test_Image_from_landsat_c2_sr_cloud_mask_args():
     output = ptjpl.Image.from_landsat_c2_sr(
         image_id, cloudmask_args={'snow_flag': True, 'cirrus_flag': True})
     assert type(output) == type(default_image_obj())
+
+
+def test_Image_from_landsat_c2_sr_c2_lst_correct_arg():
+    """Test if the c2_lst_correct parameter can be set (not if it works)"""
+    image_id = 'LANDSAT/LC08/C02/T1_L2/LC08_031034_20160702'
+    output = ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=True)
+    assert type(output) == type(default_image_obj())
+
+
+def test_Image_from_landsat_c2_sr_c2_lst_correct_fill():
+    """Test if the c2_lst_correct fills the LST holes in Nebraska"""
+    image_id = 'LANDSAT/LC08/C02/T1_L2/LC08_031034_20160702'
+    point_xy = [-102.08284, 37.81728]
+    # CGM - Is the uncorrected test needed?
+    uncorrected = utils.point_image_value(
+        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=False).LST,
+        point_xy)
+    assert uncorrected is None
+    # assert uncorrected['lst'] is None
+    corrected = utils.point_image_value(
+        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=True).LST,
+        point_xy)
+    assert corrected > 0
+    # assert corrected['lst'] > 0
+    # # Exact test values copied from openet-core
+    # assert abs(corrected['lst'] - 306.83) <= 0.25
 
 
 @pytest.mark.parametrize(
@@ -755,17 +777,13 @@ def test_Model_crop_type_constant_value():
         [2007, 2008],
         [2008, 2008],
         [2016, 2016],
-        # [2017, 2017],
-        # [2018, 2018],
-        [2019, 2019],
-        [2020, 2020],
-        [2021, 2021],
-        [2022, 2021],
+        [2022, 2022],
+        [2023, 2022],
     ]
 )
 def test_Model_crop_type_source_cdl_collection(year, expected):
     """Test that the CDL collection is filtered to a single year and is limited
-    to years with data (2008-2018 as of 7/15/2019)
+    to years with data
     """
     image = default_image_obj(crop_type_source='USDA/NASS/CDL')
     image._year = year
@@ -861,7 +879,6 @@ def test_Model_crop_pm_adjust_values(crop_pm_adjust_source, xy, expected,
                                      tol=0.001):
     output = utils.point_image_value(default_image_obj(
         crop_pm_adjust_source=crop_pm_adjust_source).crop_pm_adjust, xy)
-    print(output)
     assert abs(output - expected) <= tol
 
 
