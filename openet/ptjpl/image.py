@@ -1038,11 +1038,12 @@ class Image:
             # 'LANDSAT_4': 1260.56,
             'LANDSAT_5': 1260.56, 'LANDSAT_7': 1282.71, 'LANDSAT_8': 1321.0789
         })
-        prep_image = sr_image \
-            .select(input_bands.get(spacecraft_id), output_bands) \
-            .multiply([0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.1, 1]) \
+        prep_image = (
+            sr_image.select(input_bands.get(spacecraft_id), output_bands)
+            .multiply([0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.1, 1])
             .set({'k1_constant': ee.Number(k1.get(spacecraft_id)),
                   'k2_constant': ee.Number(k2.get(spacecraft_id))})
+        )
         # k1 = ee.Dictionary({
         #     # 'LANDSAT_4': 'K1_CONSTANT_BAND_6',
         #     'LANDSAT_5': 'K1_CONSTANT_BAND_6',
@@ -1073,11 +1074,13 @@ class Image:
         ])
 
         # Apply the cloud mask and add properties
-        input_image = input_image \
-            .updateMask(cloud_mask) \
+        input_image = (
+            input_image.updateMask(cloud_mask)
             .set({'system:index': sr_image.get('system:index'),
                   'system:time_start': sr_image.get('system:time_start'),
-                  'system:id': sr_image.get('system:id')})
+                  'system:id': sr_image.get('system:id'),
+            })
+        )
 
         # Instantiate the class
         return cls(input_image, **kwargs)
@@ -1120,11 +1123,11 @@ class Image:
         })
         output_bands = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'tir', 'QA_PIXEL']
 
-        prep_image = sr_image \
-            .select(input_bands.get(spacecraft_id), output_bands) \
-            .multiply([0.0000275, 0.0000275, 0.0000275, 0.0000275, 0.0000275,
-                       0.0000275, 0.00341802, 1])\
-            .add([-0.2, -0.2, -0.2, -0.2, -0.2, -0.2, 149.0, 0])\
+        prep_image = (
+            sr_image.select(input_bands.get(spacecraft_id), output_bands)
+            .multiply([0.0000275, 0.0000275, 0.0000275, 0.0000275, 0.0000275, 0.0000275, 0.00341802, 1])
+            .add([-0.2, -0.2, -0.2, -0.2, -0.2, -0.2, 149.0, 0])
+        )
 
         # Default the cloudmask flags to True if they were not
         # Eventually these will probably all default to True in openet.core
@@ -1156,11 +1159,13 @@ class Image:
         ])
 
         # Apply the cloud mask and add properties
-        input_image = input_image \
-            .updateMask(cloud_mask) \
+        input_image = (
+            input_image.updateMask(cloud_mask)
             .set({'system:index': sr_image.get('system:index'),
                   'system:time_start': sr_image.get('system:time_start'),
-                  'system:id': sr_image.get('system:id')})
+                  'system:id': sr_image.get('system:id'),
+            })
+        )
 
         # Instantiate the class
         return cls(input_image, **kwargs)
@@ -1199,8 +1204,7 @@ class Image:
             # Interpret numbers as constant images
             # CGM - Should we use the ee_types here instead?
             #   i.e. ee.ee_types.isNumber(self.et_reference_source)
-            crop_type_img = ee.Image.constant(self.crop_type_source)\
-                .rename('crop_type')
+            crop_type_img = ee.Image.constant(self.crop_type_source).rename('crop_type')
             # properties = properties.set('id', 'constant')
         elif (type(self.crop_type_source) is str and
               self.crop_type_source.upper() == 'USDA/NASS/CDL'):
@@ -1214,10 +1218,12 @@ class Image:
             # year_max = ee.Number.parse(ee.ImageCollection('USDA/NASS/CDL')\
             #     .limit(1, 'system:index', False).first().get('system:index'))
             cdl_year = ee.Number(self._year).min(year_max).max(year_min)
-            cdl_coll = ee.ImageCollection('USDA/NASS/CDL')\
+            cdl_coll = (
+                ee.ImageCollection('USDA/NASS/CDL')
                 .filterDate(ee.Date.fromYMD(cdl_year, 1, 1),
-                            ee.Date.fromYMD(cdl_year.add(1), 1, 1))\
+                            ee.Date.fromYMD(cdl_year.add(1), 1, 1))
                 .select(['cropland'])
+            )
             crop_type_img = ee.Image(cdl_coll.first())
             properties = properties.set('id', crop_type_img.get('system:id'))
         elif (type(self.crop_type_source) is str and
@@ -1228,15 +1234,18 @@ class Image:
                 'projects/openet/crop_type' in self.crop_type_source.lower()):
             # Use the crop_type image closest to the image date
             crop_coll = ee.ImageCollection(self.crop_type_source)
-            cdl_year = ee.Number(self._year)\
-                .min(ee.Date(crop_coll.aggregate_max('system:time_start')).get('year'))\
+            cdl_year = (
+                ee.Number(self._year)
+                .min(ee.Date(crop_coll.aggregate_max('system:time_start')).get('year'))
                 .max(ee.Date(crop_coll.aggregate_min('system:time_start')).get('year'))
-            crop_type_coll = crop_coll\
+            )
+            crop_type_coll = (
+                crop_coll
                 .filterDate(ee.Date.fromYMD(cdl_year, 1, 1),
                             ee.Date.fromYMD(cdl_year.add(1), 1, 1))
+            )
             crop_type_img = crop_type_coll.mosaic()
             properties = properties.set('id', crop_type_coll.get('system:id'))
-
         # TODO: Add support for generic ee.Image and ee.ImageCollection sources
         # elif isinstance(self.crop_type_source, computedobject.ComputedObject):
         else:

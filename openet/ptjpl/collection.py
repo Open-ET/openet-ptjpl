@@ -4,14 +4,17 @@ import datetime
 
 from dateutil.relativedelta import relativedelta
 import ee
-
-from . import utils
-from .image import Image
-# Importing to get version number, is there a better way?
-import openet.ptjpl
 import openet.core.interpolate as interpolate
 # TODO: import utils from openet.core
 # import openet.core.utils as utils
+
+from . import utils
+from .image import Image
+
+try:
+    from importlib import metadata
+except ImportError:  # for Python<3.8
+    import importlib_metadata as metadata
 
 
 def lazy_property(fn):
@@ -732,8 +735,10 @@ class Collection:
             'collections': ', '.join(self.collections),
             'interp_days': interp_days,
             'interp_method': interp_method,
-            'model_name': openet.ptjpl.MODEL_NAME,
-            'model_version': openet.ptjpl.__version__,
+            'model_name': metadata.metadata('openet-ptjpl')['Name'],
+            'model_version': metadata.metadata('openet-ptjpl')['Version'],
+            # 'model_name': openet.ptjpl.MODEL_NAME,
+            # 'model_version': openet.ptjpl.__version__,
         }
         interp_properties.update(self.model_args)
 
