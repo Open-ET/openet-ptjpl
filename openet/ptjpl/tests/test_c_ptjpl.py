@@ -1,5 +1,5 @@
 import datetime
-import logging
+# import logging
 
 import ee
 import pytest
@@ -31,9 +31,10 @@ SCENE_DATE = SCENE_DT.strftime('%Y-%m-%d')
 def test_Model_Rns_calculation(Rn, LAI, water_mask, expected, tol=0.001):
     output = utils.constant_image_value(ptjpl.Rns(
         Rn=ee.Image.constant(Rn), LAI=ee.Image.constant(LAI),
-        water_mask=ee.Image.constant(water_mask)))
+        water_mask=ee.Image.constant(water_mask)
+    ))
     if expected is None:
-       assert output is None
+        assert output is None
     else:
         assert abs(output - expected) <= tol
 

@@ -23,8 +23,7 @@ def test_day_angle_rad_from_doy(doy, expected, tol=0.000001):
     ]
 )
 def test_solar_dec_deg_from_day_angle_rad(day_angle_rad, expected, tol=0.000001):
-    output = utils.getinfo(
-        dh.solar_dec_deg_from_day_angle_rad(ee.Number(day_angle_rad)))
+    output = utils.getinfo(dh.solar_dec_deg_from_day_angle_rad(ee.Number(day_angle_rad)))
     assert abs(output - expected) <= tol
 
 
@@ -36,9 +35,9 @@ def test_solar_dec_deg_from_day_angle_rad(day_angle_rad, expected, tol=0.000001)
 )
 def test_sha_deg_from_doy_lat(doy, latitude, expected, tol=0.000001):
     output = utils.constant_image_value(dh.sha_deg_from_doy_lat(
-        ee.Number(doy), ee.Image.constant(latitude)))
-    # output = utils.getinfo(dh.sha_deg_from_doy_lat(
-    #     ee.Number(doy), ee.Number(latitude)))
+        ee.Number(doy), ee.Image.constant(latitude)
+    ))
+    # output = utils.getinfo(dh.sha_deg_from_doy_lat(ee.Number(doy), ee.Number(latitude)))
     assert abs(output - expected) <= tol
 
 

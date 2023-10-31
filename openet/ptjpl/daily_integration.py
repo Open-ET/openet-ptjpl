@@ -7,12 +7,7 @@ import math
 __author__ = "Gregory Halverson"
 
 
-def daily_integration(
-        instantaneous_net_radiation,
-        hour_of_day,
-        sunrise_hour,
-        daylight_hours):
-
+def daily_integration(instantaneous_net_radiation, hour_of_day, sunrise_hour, daylight_hours):
     # calculate daily net radiation using solar parameters
     # this is the average rate of energy transfer from sunrise to sunset
     # in watts per square meter
@@ -22,11 +17,16 @@ def daily_integration(
     # documented in verma et al, bisht et al, and lagouarde et al
 
     # CGM - Swapped order of subtraction so that hour_of_day can be a number
-    daily_net_radiation = instantaneous_net_radiation.multiply(1.6 / math.pi) \
+    daily_net_radiation = (
+        instantaneous_net_radiation
+        .multiply(1.6 / math.pi)
         .divide(sunrise_hour.multiply(-1).add(hour_of_day).multiply(math.pi)
-                    .divide(daylight_hours).sin())
-    # daily_net_radiation = 1.6 * instantaneous_net_radiation / (
-    #     math.pi * np.sin(math.pi * (hour_of_day - sunrise_hour) / (daylight_hours)))
+                .divide(daylight_hours).sin())
+    )
+    # daily_net_radiation = (
+    #     1.6 * instantaneous_net_radiation /
+    #     (math.pi * np.sin(math.pi * (hour_of_day - sunrise_hour) / (daylight_hours))
+    # )
 
     return daily_net_radiation
 
@@ -41,10 +41,14 @@ def calculate_vapor(LE_daily, daylight_hours):
 
     # factor seconds out of watts to get joules and divide by latent heat of
     # vaporization to get kilograms
-    ET_daily_kg = LE_daily.multiply(daylight_seconds) \
-        .divide(LATENT_VAPORIZATION_JOULES_PER_KILOGRAM).max(0)
+    ET_daily_kg = (
+        LE_daily.multiply(daylight_seconds)
+        .divide(LATENT_VAPORIZATION_JOULES_PER_KILOGRAM)
+        .max(0)
+    )
     # ET_daily_kg = np.clip(
     #     LE_daily * daylight_seconds / LATENT_VAPORIZATION_JOULES_PER_KILOGRAM,
-    #     0, None)
+    #     0, None
+    # )
 
     return ET_daily_kg

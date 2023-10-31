@@ -29,7 +29,7 @@ def lazy_property(fn):
     return _lazy_property
 
 
-class Image(object):
+class Image:
     """Earth Engine based PT-JPL Image"""
 
     _C2_LST_CORRECT = False  # Enable (True) C2 LST correction to recalculate LST
@@ -182,8 +182,7 @@ class Image(object):
             self.et_reference_resample = None
 
         # Check reference ET parameters
-        if (self.et_reference_factor and
-                not utils.is_number(self.et_reference_factor)):
+        if self.et_reference_factor and not utils.is_number(self.et_reference_factor):
             raise ValueError('et_reference_factor must be a number')
         if self.et_reference_factor and self.et_reference_factor < 0:
             raise ValueError('et_reference_factor must be greater than zero')
@@ -262,8 +261,7 @@ class Image(object):
     @lazy_property
     def et_fraction(self):
         """Fraction of reference ET (equivalent to the Kc)"""
-        return self.ET.divide(self.et_reference) \
-            .rename(['et_fraction']).set(self._properties)
+        return self.ET.divide(self.et_reference).rename(['et_fraction']).set(self._properties)
 
     @lazy_property
     def et_reference(self):
@@ -280,15 +278,12 @@ class Image(object):
                 .select([self.et_reference_band])
             et_reference_img = ee.Image(et_reference_coll.first())
             if self.et_reference_resample in ['bilinear', 'bicubic']:
-                et_reference_img = et_reference_img \
-                    .resample(self.et_reference_resample)
+                et_reference_img = et_reference_img.resample(self.et_reference_resample)
         else:
-            raise ValueError(f'unsupported et_reference_source: '
-                             f'{self.et_reference_source}')
+            raise ValueError(f'unsupported et_reference_source: {self.et_reference_source}')
 
         if self.et_reference_factor:
-            et_reference_img = et_reference_img \
-                .multiply(self.et_reference_factor)
+            et_reference_img = et_reference_img.multiply(self.et_reference_factor)
 
         return self.NDVI.multiply(0).add(et_reference_img) \
             .rename(['et_reference']).set(self._properties)
@@ -302,8 +297,7 @@ class Image(object):
     @lazy_property
     def quality(self):
         """Set quality to 1 for all active pixels (for now)"""
-        return self.mask \
-            .rename(['quality']).set(self._properties)
+        return self.mask.rename(['quality']).set(self._properties)
 
     @lazy_property
     def time(self):
@@ -360,8 +354,7 @@ class Image(object):
     @lazy_property
     def ST_C(self):
         """Surface temperature Celsius"""
-        return self.ST_K.subtract(273.15) \
-            .rename(['ST_C']).set(self._properties)
+        return self.ST_K.subtract(273.15).rename(['ST_C']).set(self._properties)
 
     @lazy_property
     def NDVI(self):
@@ -395,26 +388,22 @@ class Image(object):
     @lazy_property
     def SAVI(self):
         """Soil adjusted vegetation index (SAVI)"""
-        return ptjpl.SAVI(self.NDVI) \
-            .rename(['SAVI']).set(self._properties)
+        return ptjpl.SAVI(self.NDVI).rename(['SAVI']).set(self._properties)
 
     @lazy_property
     def fAPAR(self):
         """Fraction of absorbed photosynthetically active radiation"""
-        return ptjpl.fAPAR(self.SAVI) \
-            .rename(['fAPAR']).set(self._properties)
+        return ptjpl.fAPAR(self.SAVI).rename(['fAPAR']).set(self._properties)
 
     @lazy_property
     def fIPAR(self):
         """Fraction of intercepted photosynthetically active radiation"""
-        return ptjpl.fIPAR(self.NDVI) \
-            .rename(['fIPAR']).set(self._properties)
+        return ptjpl.fIPAR(self.NDVI).rename(['fIPAR']).set(self._properties)
 
     @lazy_property
     def LAI(self):
         """Leaf area index (LAI) image"""
-        return ptjpl.LAI(self.NDVI, self.fIPAR) \
-            .rename(['LAI']).set(self._properties)
+        return ptjpl.LAI(self.NDVI, self.fIPAR).rename(['LAI']).set(self._properties)
 
     @lazy_property
     def SWin(self):
@@ -426,14 +415,12 @@ class Image(object):
     @lazy_property
     def SWout(self):
         """Instantaneous outgoing shortwave radiation in watts per square meter"""
-        return ptjpl.SWout(self.SWin, self.albedo) \
-            .rename(['SWout']).set(self._properties)
+        return ptjpl.SWout(self.SWin, self.albedo).rename(['SWout']).set(self._properties)
 
     @lazy_property
     def SWnet(self):
         """Instantaneous outgoing shortwave radiation in watts per square meter"""
-        return ptjpl.SWnet(self.SWin, self.SWout) \
-            .rename(['SWnet']).set(self._properties)
+        return ptjpl.SWnet(self.SWin, self.SWout).rename(['SWnet']).set(self._properties)
 
     # @lazy_property
     # def LWin(self):
@@ -469,20 +456,12 @@ class Image(object):
     @lazy_property
     def LWout(self):
         """Instantaneous outgoing longwave radiation in watts per square meter"""
-        return ptjpl.LWout(self.LST, self.emissivity) \
-            .rename(['LWout']).set(self._properties)
+        return ptjpl.LWout(self.LST, self.emissivity).rename(['LWout']).set(self._properties)
 
     @lazy_property
     def LWnet(self):
         """Instantaneous net longwave radiation in watts per square meter"""
-        return ptjpl.LWnet(self.LWin, self.LWout) \
-            .rename(['LWnet']).set(self._properties)
-
-    @lazy_property
-    def SWnet(self):
-        """Net shortwave radiation"""
-        return ptjpl.SWnet(self.SWin, self.SWout) \
-            .rename(['SWnet']).set(self._properties)
+        return ptjpl.LWnet(self.LWin, self.LWout).rename(['LWnet']).set(self._properties)
 
     @lazy_property
     def Rn(self):
@@ -493,8 +472,7 @@ class Image(object):
     @lazy_property
     def Rnd(self):
         """Daily average net radiation"""
-        return ptjpl.Rnd(self.Rn, self.hour_solar, self.sunrise_hour,
-                         self.daylight_hours) \
+        return ptjpl.Rnd(self.Rn, self.hour_solar, self.sunrise_hour, self.daylight_hours) \
             .rename(['Rnd']).set(self._properties)
 
     @lazy_property
@@ -659,21 +637,18 @@ class Image(object):
     @lazy_property
     def LE(self):
         """Instantaneous evapotranspiration in watts per square meter"""
-        return ptjpl.LE(self.LEc, self.LEi, self.LEs, self.PET,
-                        self.water_mask) \
+        return ptjpl.LE(self.LEc, self.LEi, self.LEs, self.PET, self.water_mask) \
             .rename(['LE']).set(self._properties)
 
     @lazy_property
     def EF(self):
         """Evaporative fraction"""
-        return ptjpl.EF(self.LE, self.Rn, self.G) \
-            .rename(['EF']).set(self._properties)
+        return ptjpl.EF(self.LE, self.Rn, self.G).rename(['EF']).set(self._properties)
 
     @lazy_property
     def LEd(self):
         """Daily latent heat flux"""
-        return ptjpl.LEd(self.EF, self.Rnd) \
-            .rename(['LEd']).set(self._properties)
+        return ptjpl.LEd(self.EF, self.Rnd).rename(['LEd']).set(self._properties)
 
     @lazy_property
     def PET(self):
@@ -696,8 +671,7 @@ class Image(object):
     @lazy_property
     def ESI(self):
         """Ratio of instantaneous latent heat flux to potential latent heat flux"""
-        return ptjpl.ESI(self.LE, self.PET) \
-            .rename(['ESI']).set(self._properties)
+        return ptjpl.ESI(self.LE, self.PET).rename(['ESI']).set(self._properties)
 
     @lazy_property
     def ea(self):
@@ -745,8 +719,7 @@ class Image(object):
     @lazy_property
     def Ea_kPa(self):
         """Actual vapor pressure (kilopascal)"""
-        return self.Ea_Pa.divide(1000.0) \
-            .rename(['Ea_kPa']).set(self._properties)
+        return self.Ea_Pa.divide(1000.0).rename(['Ea_kPa']).set(self._properties)
 
     @lazy_property
     def rs(self):
@@ -792,8 +765,7 @@ class Image(object):
         elif isinstance(self.ta_source, ee.computedobject.ComputedObject):
             ta_img = ee.Image(self.ta_source)
         elif self.ta_source.upper() == 'NLDAS':
-            ta_img = self.nldas_interpolate('temperature', self._date) \
-                .add(273.15)
+            ta_img = self.nldas_interpolate('temperature', self._date).add(273.15)
         else:
             raise ValueError(f'Unsupported ta_source: {self.ta_source}\n')
 
@@ -835,8 +807,7 @@ class Image(object):
             next_time = ee.Number(next_img.get('system:time_start'))
             interp_time = interp_date.millis().subtract(prev_time) \
                 .divide(next_time.subtract(prev_time))
-            output_img = next_img.subtract(prev_img).multiply(interp_time) \
-                .add(prev_img)
+            output_img = next_img.subtract(prev_img).multiply(interp_time).add(prev_img)
         else:
             # Select the first NLDAS image after the image date
             output_coll = ee.ImageCollection(nldas_coll) \
@@ -1069,11 +1040,12 @@ class Image(object):
             # 'LANDSAT_4': 1260.56,
             'LANDSAT_5': 1260.56, 'LANDSAT_7': 1282.71, 'LANDSAT_8': 1321.0789
         })
-        prep_image = sr_image \
-            .select(input_bands.get(spacecraft_id), output_bands) \
-            .multiply([0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.1, 1]) \
+        prep_image = (
+            sr_image.select(input_bands.get(spacecraft_id), output_bands)
+            .multiply([0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.1, 1])
             .set({'k1_constant': ee.Number(k1.get(spacecraft_id)),
                   'k2_constant': ee.Number(k2.get(spacecraft_id))})
+        )
         # k1 = ee.Dictionary({
         #     # 'LANDSAT_4': 'K1_CONSTANT_BAND_6',
         #     'LANDSAT_5': 'K1_CONSTANT_BAND_6',
@@ -1104,11 +1076,13 @@ class Image(object):
         ])
 
         # Apply the cloud mask and add properties
-        input_image = input_image \
-            .updateMask(cloud_mask) \
+        input_image = (
+            input_image.updateMask(cloud_mask)
             .set({'system:index': sr_image.get('system:index'),
                   'system:time_start': sr_image.get('system:time_start'),
-                  'system:id': sr_image.get('system:id')})
+                  'system:id': sr_image.get('system:id'),
+            })
+        )
 
         # Instantiate the class
         return cls(input_image, **kwargs)
@@ -1151,11 +1125,11 @@ class Image(object):
         })
         output_bands = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'tir', 'QA_PIXEL']
 
-        prep_image = sr_image \
-            .select(input_bands.get(spacecraft_id), output_bands) \
-            .multiply([0.0000275, 0.0000275, 0.0000275, 0.0000275, 0.0000275,
-                       0.0000275, 0.00341802, 1])\
-            .add([-0.2, -0.2, -0.2, -0.2, -0.2, -0.2, 149.0, 0])\
+        prep_image = (
+            sr_image.select(input_bands.get(spacecraft_id), output_bands)
+            .multiply([0.0000275, 0.0000275, 0.0000275, 0.0000275, 0.0000275, 0.0000275, 0.00341802, 1])
+            .add([-0.2, -0.2, -0.2, -0.2, -0.2, -0.2, 149.0, 0])
+        )
 
         # Default the cloudmask flags to True if they were not
         # Eventually these will probably all default to True in openet.core
@@ -1201,11 +1175,13 @@ class Image(object):
         ])
 
         # Apply the cloud mask and add properties
-        input_image = input_image \
-            .updateMask(cloud_mask) \
+        input_image = (
+            input_image.updateMask(cloud_mask)
             .set({'system:index': sr_image.get('system:index'),
                   'system:time_start': sr_image.get('system:time_start'),
-                  'system:id': sr_image.get('system:id')})
+                  'system:id': sr_image.get('system:id'),
+            })
+        )
 
         # Instantiate the class
         return cls(input_image, **kwargs)
@@ -1244,43 +1220,48 @@ class Image(object):
             # Interpret numbers as constant images
             # CGM - Should we use the ee_types here instead?
             #   i.e. ee.ee_types.isNumber(self.et_reference_source)
-            crop_type_img = ee.Image.constant(self.crop_type_source)\
-                .rename('crop_type')
+            crop_type_img = ee.Image.constant(self.crop_type_source).rename('crop_type')
             # properties = properties.set('id', 'constant')
         elif (type(self.crop_type_source) is str and
               self.crop_type_source.upper() == 'USDA/NASS/CDL'):
             # Use the CDL image closest to the image date
             year_min = ee.Number(2008)
-            year_max = ee.Date(ee.ImageCollection('USDA/NASS/CDL')
+            year_max = ee.Date(
+                ee.ImageCollection('USDA/NASS/CDL')
                 .limit(1, 'system:index', False).first()
-                .get('system:time_start')).get('year')
+                .get('system:time_start')
+            ).get('year')
             # year_max = ee.Number.parse(ee.ImageCollection('USDA/NASS/CDL')\
             #     .limit(1, 'system:index', False).first().get('system:index'))
             cdl_year = ee.Number(self._year).min(year_max).max(year_min)
-            cdl_coll = ee.ImageCollection('USDA/NASS/CDL')\
+            cdl_coll = (
+                ee.ImageCollection('USDA/NASS/CDL')
                 .filterDate(ee.Date.fromYMD(cdl_year, 1, 1),
-                            ee.Date.fromYMD(cdl_year.add(1), 1, 1))\
+                            ee.Date.fromYMD(cdl_year.add(1), 1, 1))
                 .select(['cropland'])
+            )
             crop_type_img = ee.Image(cdl_coll.first())
             properties = properties.set('id', crop_type_img.get('system:id'))
         elif (type(self.crop_type_source) is str and
                 self.crop_type_source.upper().startswith('USDA/NASS/CDL')):
-            crop_type_img = ee.Image(self.crop_type_source)\
-                .select(['cropland'])
+            crop_type_img = ee.Image(self.crop_type_source).select(['cropland'])
             properties = properties.set('id', crop_type_img.get('system:id'))
         elif (type(self.crop_type_source) is str and
                 'projects/openet/crop_type' in self.crop_type_source.lower()):
             # Use the crop_type image closest to the image date
             crop_coll = ee.ImageCollection(self.crop_type_source)
-            cdl_year = ee.Number(self._year)\
-                .min(ee.Date(crop_coll.aggregate_max('system:time_start')).get('year'))\
+            cdl_year = (
+                ee.Number(self._year)
+                .min(ee.Date(crop_coll.aggregate_max('system:time_start')).get('year'))
                 .max(ee.Date(crop_coll.aggregate_min('system:time_start')).get('year'))
-            crop_type_coll = crop_coll\
+            )
+            crop_type_coll = (
+                crop_coll
                 .filterDate(ee.Date.fromYMD(cdl_year, 1, 1),
                             ee.Date.fromYMD(cdl_year.add(1), 1, 1))
+            )
             crop_type_img = crop_type_coll.mosaic()
             properties = properties.set('id', crop_type_coll.get('system:id'))
-
         # TODO: Add support for generic ee.Image and ee.ImageCollection sources
         # elif isinstance(self.crop_type_source, computedobject.ComputedObject):
         else:

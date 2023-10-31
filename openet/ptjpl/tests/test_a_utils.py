@@ -68,8 +68,8 @@ def test_millis():
 
 
 def test_valid_date():
-    assert utils.valid_date('2015-07-13') == True
-    assert utils.valid_date('2015-02-30') == False
-    assert utils.valid_date('20150713') == False
-    assert utils.valid_date('07/13/2015') == False
-    assert utils.valid_date('07-13-2015', '%m-%d-%Y') == True
+    assert utils.valid_date('2015-07-13') is True
+    assert utils.valid_date('2015-02-30') is False
+    assert utils.valid_date('20150713') is False
+    assert utils.valid_date('07/13/2015') is False
+    assert utils.valid_date('07-13-2015', '%m-%d-%Y') is True

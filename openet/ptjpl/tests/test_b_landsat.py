@@ -17,16 +17,17 @@ SCENE_DATE = SCENE_DT.strftime('%Y-%m-%d')
 SCENE_TIME = utils.millis(SCENE_DT)
 
 
-def toa_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2,
-              bt=300):
+def toa_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2, bt=300):
     """Construct a fake Landsat 8 TOA image with renamed bands"""
-    return ee.Image.constant([blue, green, red, nir, swir1, swir2, bt]) \
-        .rename(['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'tir']) \
+    return (
+        ee.Image.constant([blue, green, red, nir, swir1, swir2, bt])
+        .rename(['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'tir'])
         .set({
             'system:time_start': ee.Date(SCENE_DATE).millis(),
             'k1_constant': ee.Number(607.76),
             'k2_constant': ee.Number(1260.56),
         })
+    )
 
 
 # Test the static methods of the class first
@@ -47,8 +48,7 @@ def toa_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2,
     ]
 )
 def test_Image_ndvi_calculation(red, nir, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.ndvi(
-        toa_image(red=red, nir=nir)))
+    output = utils.constant_image_value(landsat.ndvi(toa_image(red=red, nir=nir)))
     assert abs(output - expected) <= tol
 
 
@@ -57,8 +57,7 @@ def test_Image_ndvi_band_name():
     assert output == 'ndvi'
 
 
-def test_Image_ndwi_calculation(green=0.2, nir=0.2, expected=0,
-                                tol=0.000001):
+def test_Image_ndwi_calculation(green=0.2, nir=0.2, expected=0, tol=0.000001):
     output = utils.constant_image_value(landsat.ndwi(
         toa_image(green=green, nir=nir)))
     assert abs(output - expected) <= tol
@@ -77,8 +76,7 @@ def test_Image_ndwi_band_name():
     ]
 )
 def test_Image_mndwi_calculation(green, swir2, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.mndwi(
-        toa_image(green=green, swir2=swir2)))
+    output = utils.constant_image_value(landsat.mndwi(toa_image(green=green, swir2=swir2)))
     assert abs(output - expected) <= tol
 
 
@@ -96,11 +94,12 @@ def test_Image_mndwi_band_name():
 )
 def test_Image_wri_calculation(green, red, nir, swir2, expected, tol=0.000001):
     output = utils.constant_image_value(landsat.wri(
-        toa_image(green=green, red=red, nir=nir, swir2=swir2)))
+        toa_image(green=green, red=red, nir=nir, swir2=swir2)
+    ))
     assert abs(output - expected) <= tol
 
 
-def test_Image_mndwi_band_name():
+def test_Image_wri_band_name():
     output = landsat.wri(toa_image()).getInfo()['bands'][0]['id']
     assert output == 'wri'
 
@@ -122,8 +121,7 @@ def test_Image_mndwi_band_name():
     ]
 )
 def test_Image_emissivity_ptjpl_calculation(red, nir, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.emissivity_ptjpl(
-        toa_image(red=red, nir=nir)))
+    output = utils.constant_image_value(landsat.emissivity_ptjpl(toa_image(red=red, nir=nir)))
     assert abs(output - expected) <= tol
 
 
@@ -148,8 +146,7 @@ def test_Image_emissivity_disalexi_band_name():
     ]
 )
 def test_Image_emissivity_metric_calculation(red, nir, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.emissivity_metric(
-        toa_image(red=red, nir=nir)))
+    output = utils.constant_image_value(landsat.emissivity_metric(toa_image(red=red, nir=nir)))
     assert abs(output - expected) <= tol
 
 
@@ -166,8 +163,7 @@ def test_Image_emissivity_metric_band_name():
     ]
 )
 def test_Image_lst_calculation(red, nir, bt, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.lst(
-        toa_image(red=red, nir=nir, bt=bt)))
+    output = utils.constant_image_value(landsat.lst(toa_image(red=red, nir=nir, bt=bt)))
     assert abs(output - expected) <= tol
 
 
@@ -182,10 +178,8 @@ def test_Image_lst_band_name():
         [0.2, 0.2, 0.2, 0.7, 0.2, 0.2, 0.3555],
     ]
 )
-def test_Image_albedo_calculation(blue, green, red, nir, swir1, swir2,
-                                  expected, tol=0.000001):
-    toa = toa_image(blue=blue, green=green, red=red, nir=nir, swir1=swir1,
-                    swir2=swir2)
+def test_Image_albedo_calculation(blue, green, red, nir, swir1, swir2, expected, tol=0.000001):
+    toa = toa_image(blue=blue, green=green, red=red, nir=nir, swir1=swir1, swir2=swir2)
     output = utils.constant_image_value(landsat.albedo_metric(toa))
     assert abs(output - expected) <= tol
 
