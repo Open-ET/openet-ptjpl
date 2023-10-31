@@ -12,9 +12,8 @@ def SVP_from_Ta(Ta_C):
     :param Ta_C: air temperature in celsius
     :return: saturation vapor pressure in kilopascals
     """
-    # return Ta_C.expression(
-    #     '0.611 * exp((Ta_C * 17.27) / (Ta_C + 237.7))', {'Ta_C': Ta_C})
     return Ta_C.multiply(17.27).divide(Ta_C.add(237.7)).exp().multiply(0.611)
+    # return Ta_C.expression('0.611 * exp((Ta_C * 17.27) / (Ta_C + 237.7))', {'Ta_C': Ta_C})
     # return 0.611 * np.exp((Ta_C * 17.27) / (Ta_C + 237.7))
 
 
@@ -24,13 +23,15 @@ def delta_from_Ta(Ta_C):
     :param Ta_C: air temperature in celsius
     :return: slope of the vapor pressure curve in kilopascals/kelvin
     """
+    return (
+        Ta_C.multiply(17.27).divide(Ta_C.add(237.7)).exp()
+        .multiply(0.6108 * 4098).divide(Ta_C.add(237.3).pow(2.0))
+    )
     # return Ta_C.expression(
     #     '4098 * 0.6108 * exp(17.27 * Ta_C / (237.7 + Ta_C)) / (Ta_C + 237.3) ** 2',
-    #     {'Ta_C': Ta_C})
-    return Ta_C.multiply(17.27).divide(Ta_C.add(237.7)).exp() \
-        .multiply(0.6108 * 4098).divide(Ta_C.add(237.3).pow(2.0))
-    # return 4098 * (0.6108 * np.exp(17.27 * Ta_C / (237.7 + Ta_C))) /
-    #        (Ta_C + 237.3) ** 2
+    #     {'Ta_C': Ta_C}
+    # )
+    # return 4098 * (0.6108 * np.exp(17.27 * Ta_C / (237.7 + Ta_C))) / (Ta_C + 237.3) ** 2
 
 
 def kelvin_to_celsius(temperature_K):

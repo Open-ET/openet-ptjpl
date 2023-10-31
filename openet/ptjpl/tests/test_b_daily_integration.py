@@ -20,7 +20,8 @@ def test_day_angle_rad_from_doy_number(rn, hour_of_day, sunrise_hour,
         instantaneous_net_radiation=ee.Number(rn),
         hour_of_day=ee.Number(hour_of_day),
         sunrise_hour=ee.Number(sunrise_hour),
-        daylight_hours=ee.Number(daylight_hours)))
+        daylight_hours=ee.Number(daylight_hours),
+    ))
     assert abs(output - expected) <= tol
 
 
@@ -37,7 +38,8 @@ def test_day_angle_rad_from_doy_image(rn, hour_of_day, sunrise_hour,
         instantaneous_net_radiation=ee.Image.constant(rn),
         hour_of_day=ee.Number(hour_of_day),
         sunrise_hour=ee.Image.constant(sunrise_hour),
-        daylight_hours=ee.Image.constant(daylight_hours)))
+        daylight_hours=ee.Image.constant(daylight_hours),
+    ))
     assert abs(output - expected) <= tol
 
 
@@ -48,8 +50,8 @@ def test_day_angle_rad_from_doy_image(rn, hour_of_day, sunrise_hour,
         [-10.0, 12.0, 0.0],  # Test the .max(0)
     ]
 )
-def test_solar_dec_deg_from_day_angle_rad(LE_daily, daylight_hours, expected,
-                                          tol=0.1):
+def test_solar_dec_deg_from_day_angle_rad(LE_daily, daylight_hours, expected, tol=0.1):
     output = utils.getinfo(daily_integration.calculate_vapor(
-        ee.Number(LE_daily), ee.Number(daylight_hours)))
+        ee.Number(LE_daily), ee.Number(daylight_hours)
+    ))
     assert abs(output - expected) <= tol

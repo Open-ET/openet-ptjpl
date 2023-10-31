@@ -115,8 +115,7 @@ def et(
     # eta1 = 0.465 * Ea_Pa / Ta_K
 
     atmospheric_emissivity = eta1.expression(
-        '1 - (1 + eta1) * exp(-sqrt(1.2 + 3 * eta1))',
-        {'eta1': eta1}
+        '1 - (1 + eta1) * exp(-sqrt(1.2 + 3 * eta1))', {'eta1': eta1}
     )
     # atmospheric_emissivity = eta1.multiply(3).add(1.2).sqrt().multiply(-1).exp() \
     #     .multiply(eta1.add(1)).multiply(-1).add(1)
@@ -130,8 +129,11 @@ def et(
     # calculate incoming longwave radiation
     LWin = Ta_K.expression(
         'atmospheric_emissivity * STEFAN_BOLTZMAN_CONSTANT * Ta_K ** 4',
-        {'Ta_K': Ta_K, 'atmospheric_emissivity': atmospheric_emissivity,
-         'STEFAN_BOLTZMAN_CONSTANT': STEFAN_BOLTZMAN_CONSTANT}
+        {
+            'Ta_K': Ta_K,
+            'atmospheric_emissivity': atmospheric_emissivity,
+            'STEFAN_BOLTZMAN_CONSTANT': STEFAN_BOLTZMAN_CONSTANT
+        }
     )
     # LWin = Ta_K.pow(4).multiply(atmospheric_emissivity).multiply(STEFAN_BOLTZMAN_CONSTANT)
     # LWin = atmospheric_emissivity * STEFAN_BOLTZMAN_CONSTANT * Ta_K ** 4
@@ -139,8 +141,11 @@ def et(
     # calculate outgoing longwave radiation
     LWout = LST.expression(
         'emissivity * STEFAN_BOLTZMAN_CONSTANT * LST ** 4',
-        {'LST': LST, 'emissivity': emissivity,
-         'STEFAN_BOLTZMAN_CONSTANT': STEFAN_BOLTZMAN_CONSTANT}
+        {
+            'LST': LST,
+            'emissivity': emissivity,
+            'STEFAN_BOLTZMAN_CONSTANT': STEFAN_BOLTZMAN_CONSTANT
+        }
     )
     # LWout = LST.multiply(4).multiply(emissivity).multiply(STEFAN_BOLTZMAN_CONSTANT)
     # LWout = emissivity * STEFAN_BOLTZMAN_CONSTANT * LST ** 4
@@ -155,8 +160,7 @@ def et(
     Rn = SWnet.add(LWnet)
 
     # integrate net radiation to daily value
-    Rnd = daily_integration.daily_integration(
-        Rn, hour, sunrise_hour, daylight_hours)
+    Rnd = daily_integration.daily_integration(Rn, hour, sunrise_hour, daylight_hours)
 
     # METEOROLOGICAL VARIABLES
 
@@ -200,18 +204,12 @@ def et(
     # fSM = np.clip(RH ** (VPD_kPa / BETA), 0.0, 1.0)
 
     # calculate plant temperature constraint (fT) from optimal phenology
-    fT = Ta_C.expression(
-        'exp(-(((Ta_C - Topt) / Topt) ** 2))',
-        {'Ta_C': Ta_C, 'Topt': Topt}
-    )
+    fT = Ta_C.expression('exp(-(((Ta_C - Topt) / Topt) ** 2))', {'Ta_C': Ta_C, 'Topt': Topt})
     # fT = Ta_C.subtract(Topt).divide(Topt).pow(2).multiply(-1).exp()
     # fT = np.exp(-(((Ta_C - Topt) / Topt) ** 2))
 
     # calculate leaf area index
-    LAI = NDVI.expression(
-        '-log(1 - fIPAR) * (1 / KPAR)',
-        {'fIPAR': fIPAR, 'KPAR': KPAR}
-    )
+    LAI = NDVI.expression('-log(1 - fIPAR) * (1 / KPAR)', {'fIPAR': fIPAR, 'KPAR': KPAR})
     # LAI = fIPAR.multiply(-1).add(1).log().multiply(-1).divide(KPAR)
     # LAI = -np.log(1 - fIPAR) * (1 / KPAR)
 
@@ -237,8 +235,7 @@ def et(
     # and soil heat flux
     LEs = Rns.expression(
         '(fwet + fSM * (1 - fwet)) * PT_ALPHA * epsilon * (Rns - G)',
-        {'fwet': fwet, 'fSM': fSM, 'PT_ALPHA': PT_ALPHA, 'epsilon': epsilon,
-         'Rns': Rns, 'G': G}
+        {'fwet': fwet, 'fSM': fSM, 'PT_ALPHA': PT_ALPHA, 'epsilon': epsilon, 'Rns': Rns, 'G': G}
     )
     # LEs = Rns.subtract(G).multiply(PT_ALPHA).multiply(epsilon) \
     #     .multiply(fwet.multiply(-1).add(1).multiply(fsm).add(fwet))
@@ -264,8 +261,15 @@ def et(
     # and net radiation of the canopy
     LEc = Rnc.expression(
         'PT_ALPHA * (1 - fwet) * fg * fT * fM * epsilon * Rnc',
-        {'PT_ALPHA': PT_ALPHA, 'fwet': fwet, 'fg': fg, 'fT': fT, 'fM': fM,
-         'epsilon': epsilon, 'Rnc': Rnc}
+        {
+            'PT_ALPHA': PT_ALPHA,
+            'fwet': fwet,
+            'fg': fg,
+            'fT': fT,
+            'fM': fM,
+            'epsilon': epsilon,
+            'Rnc': Rnc
+        }
     )
     # LEc =  fwet.multiply(-1).add(1).multiply(PT_ALPHA).multiply(epsilon) \
     #     .multiply(fg).multiply(fT).multiply(fM).multiply(Rnc)

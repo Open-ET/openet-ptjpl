@@ -23,13 +23,15 @@ def solar_dec_deg_from_day_angle_rad(day_angle_rad):
     This function calculates solar declination in degrees from day angle in radians.
     """
     # CGM - Moved the subtract operation (minus signs) into the multiplication
-    return day_angle_rad.cos().multiply(-0.399912) \
-        .add(day_angle_rad.sin().multiply(0.070257)) \
-        .add(day_angle_rad.multiply(2).cos().multiply(-0.006758)) \
-        .add(day_angle_rad.multiply(2).sin().multiply(0.000907)) \
-        .add(day_angle_rad.multiply(3).cos().multiply(-0.002697)) \
-        .add(day_angle_rad.multiply(3).sin().multiply(0.00148)) \
+    return (
+        day_angle_rad.cos().multiply(-0.399912)
+        .add(day_angle_rad.sin().multiply(0.070257))
+        .add(day_angle_rad.multiply(2).cos().multiply(-0.006758))
+        .add(day_angle_rad.multiply(2).sin().multiply(0.000907))
+        .add(day_angle_rad.multiply(3).cos().multiply(-0.002697))
+        .add(day_angle_rad.multiply(3).sin().multiply(0.00148))
         .add(0.006918).multiply(180 / math.pi)
+    )
     # return (0.006918
     #         - 0.399912 * cos(day_angle_rad)
     #         + 0.070257 * sin(day_angle_rad)
@@ -79,7 +81,7 @@ def sha_deg_from_doy_lat(doy, latitude):
 
 def sunrise_from_sha(sha_deg):
     """
-    This function calculates sunrise hour from sunrise hour angle in degrees. 
+    This function calculates sunrise hour from sunrise hour angle in degrees.
     """
     return sha_deg.divide(15.0).multiply(-1).add(12)
     # return 12.0 - (sha_deg / 15.0)

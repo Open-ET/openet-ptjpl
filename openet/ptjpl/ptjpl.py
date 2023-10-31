@@ -52,9 +52,7 @@ def LAI(NDVI, fIPAR):
     """Return leaf area index (LAI) image"""
 
     # calculate leaf area index
-    LAI = NDVI.expression(
-        '-log(1 - fIPAR) * (1 / KPAR)',
-        {'fIPAR': fIPAR, 'KPAR': KPAR})
+    LAI = NDVI.expression('-log(1 - fIPAR) * (1 / KPAR)', {'fIPAR': fIPAR, 'KPAR': KPAR})
 
     return LAI
 
@@ -164,16 +162,6 @@ def LWnet(LWin, LWout):
     return LWnet
 
 
-def SWnet(SWin, SWout):
-    """
-    Net shortwave radiation
-    :param SWin: ee.Image incoming shortwave radiation in watts per square meter
-    :param SWout: ee.Image outgoing shortwave radiation in watts per square meter
-    :return: ee.Image net shortwave radiation in watts per square meter
-    """
-    return SWin.subtract(SWout)
-
-
 def Rn(SWin, SWout, LWin, LWout):
     """
     Parameters
@@ -215,14 +203,7 @@ def Rns(Rn, LAI, water_mask):
     -------
     ee.Image
     """
-    Rns = Rn.expression(
-        'Rn * exp(-KRN * LAI)',
-        {
-            'Rn': Rn,
-            'KRN': KRN,
-            'LAI': LAI
-        }
-    )
+    Rns = Rn.expression('Rn * exp(-KRN * LAI)', {'Rn': Rn, 'KRN': KRN, 'LAI': LAI})
 
     Rns = Rns.updateMask(water_mask.Not())
 
@@ -363,13 +344,7 @@ def RH(Ea_kPa, SVP_kPa):
 
 
 def Td(Ta_C, RH):
-    Td = RH.expression(
-        "Ta_C - ((100 - RH * 100) / 5.0)",
-        {
-            "Ta_C": Ta_C,
-            "RH": RH
-        }
-    )
+    Td = RH.expression("Ta_C - ((100 - RH * 100) / 5.0)", {"Ta_C": Ta_C, "RH": RH})
 
     return Td
 
@@ -404,9 +379,7 @@ def delta(Ta_C):
     """
     delta = Ta_C.expression(
         '4098 * (0.6108 * exp(17.27 * Ta_C / (237.7 + Ta_C))) / (Ta_C + 237.3) ** 2',
-        {
-            'Ta_C': Ta_C
-        }
+        {'Ta_C': Ta_C}
     )
 
     return delta
@@ -435,10 +408,7 @@ def fSM(RH, VPD_kPa):
 
 def fT(Ta_C, Topt):
     """plant temperature constraint"""
-    fT = Ta_C.expression(
-        'exp(-(((Ta_C - Topt) / Topt) ** 2))',
-        {'Ta_C': Ta_C, 'Topt': Topt}
-    )
+    fT = Ta_C.expression('exp(-(((Ta_C - Topt) / Topt) ** 2))', {'Ta_C': Ta_C, 'Topt': Topt})
 
     return fT
 
@@ -459,8 +429,15 @@ def LEc(fwet, fg, fT, fM, epsilon, Rnc):
     # and net radiation of the canopy
     LEc = Rnc.expression(
         'PT_ALPHA * (1 - fwet) * fg * fT * fM * epsilon * Rnc',
-        {'PT_ALPHA': PT_ALPHA, 'fwet': fwet, 'fg': fg, 'fT': fT, 'fM': fM,
-         'epsilon': epsilon, 'Rnc': Rnc}
+        {
+            'PT_ALPHA': PT_ALPHA,
+            'fwet': fwet,
+            'fg': fg,
+            'fT': fT,
+            'fM': fM,
+            'epsilon': epsilon,
+            'Rnc': Rnc
+        }
     )
     # LEc =  fwet.multiply(-1).add(1).multiply(PT_ALPHA).multiply(epsilon) \
     #     .multiply(fg).multiply(fT).multiply(fM).multiply(Rnc)
@@ -485,8 +462,12 @@ def LEs(fwet, fSM, epsilon, Rns, G):
     # and soil heat flux
     LEs = Rns.expression(
         '(fwet + fSM * (1 - fwet)) * PT_ALPHA * epsilon * (Rns - G)',
-        {'fwet': fwet, 'fSM': fSM, 'PT_ALPHA': PT_ALPHA, 'epsilon': epsilon,
-         'Rns': Rns, 'G': G})
+        {
+            'fwet': fwet,
+            'fSM': fSM,
+            'PT_ALPHA': PT_ALPHA, 'epsilon': epsilon,
+            'Rns': Rns, 'G': G
+        })
 
     # floor soil evaporation at zero
     LEs = LEs.max(0)
@@ -516,14 +497,7 @@ def LE(LEc, LEi, LEs, PET, water_mask):
 
 
 def EF(LE, Rn, G):
-    return LE.expression(
-        'LE / (Rn - G)',
-        {
-            'LE': LE,
-            'Rn': Rn,
-            'G': G
-        }
-    )
+    return LE.expression('LE / (Rn - G)', {'LE': LE, 'Rn': Rn, 'G': G})
 
 
 def LEd(EF, Rnd):

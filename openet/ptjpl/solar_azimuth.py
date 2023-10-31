@@ -26,8 +26,10 @@ def calculate_solar_azimuth(solar_dec_deg, sza_deg, hour):
     # solar_azimuth_rad = arccos(
     #     (sin(solar_dec_rad) - cos(sza_rad) * sin(latitude_rad)) /
     #     (sin(sza_rad) * cos(latitude_rad)))
-    solar_azimuth_rad = hour_angle_rad.sin().multiply(solar_dec_rad.cos()) \
+    solar_azimuth_rad = (
+        hour_angle_rad.sin().multiply(solar_dec_rad.cos())
         .multiply(-1).divide(sza_rad.sin()).asin()
+    )
     solar_azimuth_deg = solar_azimuth_rad.multiply(180 / math.pi)
 
     return solar_azimuth_deg

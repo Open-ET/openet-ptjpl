@@ -67,8 +67,7 @@ def test_pascal_to_kilopascal(P_Pa, expected, tol=0.000001):
 )
 def test_meteorology_svp(Ta_C, Ea_kPa, expected, tol=0.000001):
     # CGM - This test uses images due to .updateMask() call in meteorology
-    SVP, VPD, RH = meteorology.meteorology(
-        ee.Image.constant(Ta_C), ee.Image.constant(Ea_kPa))
+    SVP, VPD, RH = meteorology.meteorology(ee.Image.constant(Ta_C), ee.Image.constant(Ea_kPa))
     output = utils.constant_image_value(SVP)
     assert abs(output - expected) <= tol
 
@@ -82,8 +81,7 @@ def test_meteorology_svp(Ta_C, Ea_kPa, expected, tol=0.000001):
 )
 def test_meteorology_vpd(Ta_C, Ea_kPa, expected, tol=0.000001):
     # CGM - This test uses images due to .updateMask() call in meteorology
-    SVP, VPD, RH = meteorology.meteorology(
-        ee.Image.constant(Ta_C), ee.Image.constant(Ea_kPa))
+    SVP, VPD, RH = meteorology.meteorology(ee.Image.constant(Ta_C), ee.Image.constant(Ea_kPa))
     output = utils.constant_image_value(VPD)
     if expected is None and output is None:
         assert True
@@ -100,8 +98,7 @@ def test_meteorology_vpd(Ta_C, Ea_kPa, expected, tol=0.000001):
 )
 def test_meteorology_rh(Ta_C, Ea_kPa, expected, tol=0.000001):
     # CGM - This test uses images due to .updateMask() call in meteorology
-    SVP, VPD, RH = meteorology.meteorology(
-        ee.Image.constant(Ta_C), ee.Image.constant(Ea_kPa))
+    SVP, VPD, RH = meteorology.meteorology(ee.Image.constant(Ta_C), ee.Image.constant(Ea_kPa))
     output = utils.constant_image_value(RH)
     assert abs(output - expected) <= tol
 

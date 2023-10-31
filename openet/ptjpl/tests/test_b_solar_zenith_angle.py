@@ -13,5 +13,6 @@ import openet.ptjpl.utils as utils
 )
 def test_sza(latitude, solar_dec_deg, hour, expected, tol=0.000001):
     output = utils.getinfo(sza.sza_deg_from_lat_dec_hour(
-        ee.Number(latitude), ee.Number(solar_dec_deg), ee.Number(hour)))
+        ee.Number(latitude), ee.Number(solar_dec_deg), ee.Number(hour)
+    ))
     assert abs(output - expected) <= tol
