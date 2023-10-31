@@ -1,0 +1,48 @@
+[project]
+name = "openet-ptjpl"
+version = "0.2.2"
+authors = [
+  { name = "Gregory Halverson", email = "Gregory.H.Halverson@jpl.nasa.gov" },
+  { name = "Josh Fisher", email = "joshbfisher@gmail.com" },
+]
+ maintainers = [
+   { name = "Gregory Halverson", email = "Gregory.H.Halverson@jpl.nasa.gov" },
+ ]
+description = "Earth Engine based PTJPL Model"
+readme = "README.rst"
+requires-python = ">=3.7"
+keywords = ["PTJPL", "OpenET", "Earth Engine", "evapotranspiration"]
+license = {file = "LICENSE"}
+# license = {text = "Apache-2.0"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "earthengine-api>=0.1.310",
+    "openet-core>=0.0.29",
+    # "openet-refet-gee>=0.2.0",
+    "python-dateutil",
+    "importlib-metadata; python_version <= '3.7'",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Open-ET/openet-ptjpl"
+# "Repository" = "https://github.com/Open-ET/openet-ptjpl.git"
+# "Documentation" = "https://github.com/Open-ET/openet-ptjpl"
+# "Bug Tracker" = "https://github.com/Open-ET/openet-ptjpl"
+# "Changelog" = "https://github.com/Open-ET/openet-ptjpl"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+# include = ["openet*"]
+exclude = ["examples*"]
