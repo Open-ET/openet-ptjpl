@@ -273,9 +273,11 @@ class Image:
             et_reference_img = ee.Image.constant(self.et_reference_source)
         elif type(self.et_reference_source) is str:
             # Assume a string source is an image collection ID (not an image ID)
-            et_reference_coll = ee.ImageCollection(self.et_reference_source) \
-                .filterDate(self._start_date, self._end_date) \
+            et_reference_coll = (
+                ee.ImageCollection(self.et_reference_source)
+                .filterDate(self._start_date, self._end_date)
                 .select([self.et_reference_band])
+            )
             et_reference_img = ee.Image(et_reference_coll.first())
             if self.et_reference_resample in ['bilinear', 'bicubic']:
                 et_reference_img = et_reference_img.resample(self.et_reference_resample)
@@ -379,11 +381,13 @@ class Image:
     @lazy_property
     def water_mask(self):
         """Water pixel identification"""
-        return self.NDWI.gt(0) \
-            .And(self.MNDWI.gt(0)) \
-            .And(self.WRI.gt(1)) \
-            .And(self.NDVI.lt(0)) \
+        return (
+            self.NDWI.gt(0)
+            .And(self.MNDWI.gt(0))
+            .And(self.WRI.gt(1))
+            .And(self.NDVI.lt(0))
             .rename(['water_mask']).set(self._properties)
+        )
 
     @lazy_property
     def SAVI(self):
@@ -524,26 +528,22 @@ class Image:
     @lazy_property
     def SVP_kPa(self):
         """Saturation vapor pressure in kilopascal"""
-        return ptjpl.SVP_kPa(self.Ta_C) \
-            .rename(['SVP_kPa']).set(self._properties)
+        return ptjpl.SVP_kPa(self.Ta_C).rename(['SVP_kPa']).set(self._properties)
 
     @lazy_property
     def VPD_kPa(self):
         """Vapor pressure deficit in kilopascal"""
-        return ptjpl.VPD_kPa(self.Ea_kPa, self.SVP_kPa) \
-            .rename(['VPD_kPa']).set(self._properties)
+        return ptjpl.VPD_kPa(self.Ea_kPa, self.SVP_kPa).rename(['VPD_kPa']).set(self._properties)
 
     @lazy_property
     def RH(self):
         """Relative humidity"""
-        return ptjpl.RH(self.Ea_kPa, self.SVP_kPa) \
-            .rename(['RH']).set(self._properties)
+        return ptjpl.RH(self.Ea_kPa, self.SVP_kPa).rename(['RH']).set(self._properties)
 
     @lazy_property
     def Td_C(self):
         """Relative humidity"""
-        return ptjpl.Td(self.Ta_C, self.RH) \
-            .rename(['Td']).set(self._properties)
+        return ptjpl.Td(self.Ta_C, self.RH).rename(['Td']).set(self._properties)
 
     @lazy_property
     def W(self):
@@ -576,50 +576,42 @@ class Image:
     @lazy_property
     def delta(self):
         """Slope of saturation vapor pressure to air temperature"""
-        return ptjpl.delta(self.Ta_C) \
-            .rename(['delta']).set(self._properties)
+        return ptjpl.delta(self.Ta_C).rename(['delta']).set(self._properties)
 
     @lazy_property
     def fwet(self):
         """Relative surface wetness"""
-        return ptjpl.fwet(self.RH) \
-            .rename(['fwet']).set(self._properties)
+        return ptjpl.fwet(self.RH).rename(['fwet']).set(self._properties)
 
     @lazy_property
     def fg(self):
         """Green canopy fraction"""
-        return ptjpl.fg(self.fAPAR, self.fIPAR) \
-            .rename(['fg']).set(self._properties)
+        return ptjpl.fg(self.fAPAR, self.fIPAR).rename(['fg']).set(self._properties)
 
     @lazy_property
     def fM(self):
         """Plant moisture constraint"""
-        return ptjpl.fM(self.fAPAR, self.fAPARmax) \
-            .rename(['fM']).set(self._properties)
+        return ptjpl.fM(self.fAPAR, self.fAPARmax).rename(['fM']).set(self._properties)
 
     @lazy_property
     def fSM(self):
         """Soil moisture constraint"""
-        return ptjpl.fSM(self.RH, self.VPD_kPa) \
-            .rename(['fSM']).set(self._properties)
+        return ptjpl.fSM(self.RH, self.VPD_kPa).rename(['fSM']).set(self._properties)
 
     @lazy_property
     def fT(self):
         """Plant temperature constraint"""
-        return ptjpl.fT(self.Ta_C, self.Topt) \
-            .rename(['fT']).set(self._properties)
+        return ptjpl.fT(self.Ta_C, self.Topt).rename(['fT']).set(self._properties)
 
     @lazy_property
     def epsilon(self):
         """Plant temperature constraint"""
-        return ptjpl.epsilon(self.delta) \
-            .rename(['epsilon']).set(self._properties)
+        return ptjpl.epsilon(self.delta).rename(['epsilon']).set(self._properties)
 
     @lazy_property
     def LEc(self):
         """Instantaneous canopy transpiration in watts per square meter"""
-        return ptjpl.LEc(self.fwet, self.fg, self.fT, self.fM, self.epsilon,
-                         self.Rnc) \
+        return ptjpl.LEc(self.fwet, self.fg, self.fT, self.fM, self.epsilon, self.Rnc) \
             .rename(['LEc']).set(self._properties)
 
     @lazy_property
@@ -886,7 +878,7 @@ class Image:
         ----------
         image_id : str
             An earth engine image ID.
-            (i.e. 'LANDSAT/LC08/C01/T1_SR/LC08_044033_20170716')
+            (i.e. 'LANDSAT/LC08/C02/T1_L2/LC08_044033_20170716')
         kwargs
             Keyword arguments to pass through to model init.
 
@@ -898,16 +890,6 @@ class Image:
         # DEADBEEF - Should the supported image collection IDs and helper
         # function mappings be set in a property or method of the Image class?
         collection_methods = {
-            'LANDSAT/LE07/C01/T1_RT_TOA': 'from_landsat_c1_toa',
-            'LANDSAT/LC08/C01/T1_RT_TOA': 'from_landsat_c1_toa',
-            'LANDSAT/LT04/C01/T1_TOA': 'from_landsat_c1_toa',
-            'LANDSAT/LT05/C01/T1_TOA': 'from_landsat_c1_toa',
-            'LANDSAT/LE07/C01/T1_TOA': 'from_landsat_c1_toa',
-            'LANDSAT/LC08/C01/T1_TOA': 'from_landsat_c1_toa',
-            'LANDSAT/LT04/C01/T1_SR': 'from_landsat_c1_sr',
-            'LANDSAT/LT05/C01/T1_SR': 'from_landsat_c1_sr',
-            'LANDSAT/LE07/C01/T1_SR': 'from_landsat_c1_sr',
-            'LANDSAT/LC08/C01/T1_SR': 'from_landsat_c1_sr',
             'LANDSAT/LT04/C02/T1_L2': 'from_landsat_c2_sr',
             'LANDSAT/LT05/C02/T1_L2': 'from_landsat_c2_sr',
             'LANDSAT/LE07/C02/T1_L2': 'from_landsat_c2_sr',
@@ -925,167 +907,6 @@ class Image:
         method = getattr(Image, method_name)
 
         return method(ee.Image(image_id), **kwargs)
-
-    @classmethod
-    def from_landsat_c1_toa(cls, toa_image, cloudmask_args={}, **kwargs):
-        """Returns a PT-JPL Image instance from a Landsat Collection 1 TOA image
-
-        Parameters
-        ----------
-        toa_image : ee.Image
-            A raw Landsat Collection 1 TOA image.
-        cloudmask_args : dict
-            keyword arguments to pass through to cloud mask function
-        kwargs : dict
-            Keyword arguments to pass through to Image init function
-
-        Returns
-        -------
-        Image
-
-        """
-        toa_image = ee.Image(toa_image)
-
-        # Use the SPACECRAFT_ID property identify each Landsat type
-        spacecraft_id = ee.String(toa_image.get('SPACECRAFT_ID'))
-
-        # Rename bands to generic names
-        # Rename thermal band "k" coefficients to generic names
-        input_bands = ee.Dictionary({
-            # 'LANDSAT_4': ['B1', 'B2', 'B3', 'B4', 'B5', 'B7', 'B6', 'BQA'],
-            'LANDSAT_5': ['B1', 'B2', 'B3', 'B4', 'B5', 'B7', 'B6', 'BQA'],
-            'LANDSAT_7': ['B1', 'B2', 'B3', 'B4', 'B5', 'B7', 'B6_VCID_1', 'BQA'],
-            'LANDSAT_8': ['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B10', 'BQA'],
-        })
-        output_bands = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'tir', 'BQA']
-        k1 = ee.Dictionary({
-            # 'LANDSAT_4': 'K1_CONSTANT_BAND_6',
-            'LANDSAT_5': 'K1_CONSTANT_BAND_6',
-            'LANDSAT_7': 'K1_CONSTANT_BAND_6_VCID_1',
-            'LANDSAT_8': 'K1_CONSTANT_BAND_10',
-        })
-        k2 = ee.Dictionary({
-            # 'LANDSAT_4': 'K2_CONSTANT_BAND_6',
-            'LANDSAT_5': 'K2_CONSTANT_BAND_6',
-            'LANDSAT_7': 'K2_CONSTANT_BAND_6_VCID_1',
-            'LANDSAT_8': 'K2_CONSTANT_BAND_10',
-        })
-        prep_image = toa_image \
-            .select(input_bands.get(spacecraft_id), output_bands) \
-            .set({'k1_constant': ee.Number(toa_image.get(k1.get(spacecraft_id))),
-                  'k2_constant': ee.Number(toa_image.get(k2.get(spacecraft_id))),
-                  'SATELLITE': spacecraft_id})
-
-        cloud_mask = openet.core.common.landsat_c1_toa_cloud_mask(toa_image, **cloudmask_args)
-
-        # Build the input image
-        input_image = ee.Image([
-            landsat.albedo_metric(prep_image),
-            landsat.emissivity_metric(prep_image),
-            landsat.lst(prep_image),
-            landsat.ndvi(prep_image),
-            landsat.ndwi(prep_image),
-            landsat.mndwi(prep_image),
-            landsat.wri(prep_image)
-        ])
-
-        # Apply the cloud mask and add properties
-        input_image = input_image \
-            .updateMask(cloud_mask) \
-            .set({'system:index': toa_image.get('system:index'),
-                  'system:time_start': toa_image.get('system:time_start'),
-                  'system:id': toa_image.get('system:id')})
-
-        # Instantiate the class
-        return cls(ee.Image(input_image), **kwargs)
-
-    @classmethod
-    def from_landsat_c1_sr(cls, sr_image, cloudmask_args={}, **kwargs):
-        """Returns a PT-JPL Image instance from a Landsat Collection 1 SR image
-
-        Parameters
-        ----------
-        sr_image : ee.Image
-            A raw Landsat Collection 1 SR image.
-        cloudmask_args : dict
-            keyword arguments to pass through to cloud mask function
-        kwargs : dict
-            Keyword arguments to pass through to Image init function
-
-        Returns
-        -------
-        Image
-
-        """
-        sr_image = ee.Image(sr_image)
-
-        # Use the SATELLITE property identify each Landsat type
-        spacecraft_id = ee.String(sr_image.get('SATELLITE'))
-
-        # Rename bands to generic names
-        # Rename thermal band "k" coefficients to generic names
-        input_bands = ee.Dictionary({
-            'LANDSAT_5': ['B1', 'B2', 'B3', 'B4', 'B5', 'B7', 'B6', 'pixel_qa'],
-            'LANDSAT_7': ['B1', 'B2', 'B3', 'B4', 'B5', 'B7', 'B6', 'pixel_qa'],
-            'LANDSAT_8': ['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B10', 'pixel_qa'],
-        })
-        output_bands = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'tir', 'pixel_qa']
-
-        # Hardcode values for now
-        k1 = ee.Dictionary({
-            # 'LANDSAT_4': 607.76,
-            'LANDSAT_5': 607.76, 'LANDSAT_7': 666.09, 'LANDSAT_8': 774.8853
-        })
-        k2 = ee.Dictionary({
-            # 'LANDSAT_4': 1260.56,
-            'LANDSAT_5': 1260.56, 'LANDSAT_7': 1282.71, 'LANDSAT_8': 1321.0789
-        })
-        prep_image = (
-            sr_image.select(input_bands.get(spacecraft_id), output_bands)
-            .multiply([0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.1, 1])
-            .set({'k1_constant': ee.Number(k1.get(spacecraft_id)),
-                  'k2_constant': ee.Number(k2.get(spacecraft_id))})
-        )
-        # k1 = ee.Dictionary({
-        #     # 'LANDSAT_4': 'K1_CONSTANT_BAND_6',
-        #     'LANDSAT_5': 'K1_CONSTANT_BAND_6',
-        #     'LANDSAT_7': 'K1_CONSTANT_BAND_6_VCID_1',
-        #     'LANDSAT_8': 'K1_CONSTANT_BAND_10'})
-        # k2 = ee.Dictionary({
-        #     # 'LANDSAT_4': 'K2_CONSTANT_BAND_6',
-        #     'LANDSAT_5': 'K2_CONSTANT_BAND_6',
-        #     'LANDSAT_7': 'K2_CONSTANT_BAND_6_VCID_1',
-        #     'LANDSAT_8': 'K2_CONSTANT_BAND_10'})
-        # prep_image = sr_image\
-        #     .select(input_bands.get(spacecraft_id), output_bands) \
-        #     .set({'k1_constant', ee.Number(sr_image.get(k1.get(spacecraft_id))),
-        #           'k2_constant', ee.Number(sr_image.get(k2.get(spacecraft_id)))})
-
-        cloud_mask = openet.core.common.landsat_c1_sr_cloud_mask(sr_image, **cloudmask_args)
-
-        # Build the input image
-        input_image = ee.Image([
-            landsat.albedo_metric(prep_image),
-            landsat.emissivity_metric(prep_image),
-            landsat.lst(prep_image),
-            landsat.ndvi(prep_image),
-            landsat.ndwi(prep_image),
-            landsat.mndwi(prep_image),
-            landsat.wri(prep_image),
-            # common.landsat_c1_sr_cloud_mask(prep_image).Not(),
-        ])
-
-        # Apply the cloud mask and add properties
-        input_image = (
-            input_image.updateMask(cloud_mask)
-            .set({'system:index': sr_image.get('system:index'),
-                  'system:time_start': sr_image.get('system:time_start'),
-                  'system:id': sr_image.get('system:id'),
-            })
-        )
-
-        # Instantiate the class
-        return cls(input_image, **kwargs)
 
     @classmethod
     def from_landsat_c2_sr(cls, sr_image, cloudmask_args={}, **kwargs):
@@ -1321,6 +1142,8 @@ class Image:
             raise ValueError(f'unsupported crop_pm_adjust_source: '
                              f'{self.crop_pm_adjust_source}')
 
-        return self.NDVI.multiply(0).add(1)\
-            .where(self.crop_mask, crop_pm_adjust_img) \
+        return (
+            self.NDVI.multiply(0).add(1)
+            .where(self.crop_mask, crop_pm_adjust_img)
             .rename(['crop_pm_adjust']).set(self._properties)
+        )

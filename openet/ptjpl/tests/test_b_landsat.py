@@ -17,8 +17,8 @@ SCENE_DATE = SCENE_DT.strftime('%Y-%m-%d')
 SCENE_TIME = utils.millis(SCENE_DT)
 
 
-def toa_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2, bt=300):
-    """Construct a fake Landsat 8 TOA image with renamed bands"""
+def sr_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2, bt=300):
+    """Construct a fake Landsat 8 image with renamed bands"""
     return (
         ee.Image.constant([blue, green, red, nir, swir1, swir2, bt])
         .rename(['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'tir'])
@@ -48,23 +48,22 @@ def toa_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2, bt=30
     ]
 )
 def test_Image_ndvi_calculation(red, nir, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.ndvi(toa_image(red=red, nir=nir)))
+    output = utils.constant_image_value(landsat.ndvi(sr_image(red=red, nir=nir)))
     assert abs(output - expected) <= tol
 
 
 def test_Image_ndvi_band_name():
-    output = landsat.ndvi(toa_image()).getInfo()['bands'][0]['id']
+    output = landsat.ndvi(sr_image()).getInfo()['bands'][0]['id']
     assert output == 'ndvi'
 
 
 def test_Image_ndwi_calculation(green=0.2, nir=0.2, expected=0, tol=0.000001):
-    output = utils.constant_image_value(landsat.ndwi(
-        toa_image(green=green, nir=nir)))
+    output = utils.constant_image_value(landsat.ndwi(sr_image(green=green, nir=nir)))
     assert abs(output - expected) <= tol
 
 
 def test_Image_ndwi_band_name():
-    output = landsat.ndwi(toa_image()).getInfo()['bands'][0]['id']
+    output = landsat.ndwi(sr_image()).getInfo()['bands'][0]['id']
     assert output == 'ndwi'
 
 
@@ -76,12 +75,12 @@ def test_Image_ndwi_band_name():
     ]
 )
 def test_Image_mndwi_calculation(green, swir2, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.mndwi(toa_image(green=green, swir2=swir2)))
+    output = utils.constant_image_value(landsat.mndwi(sr_image(green=green, swir2=swir2)))
     assert abs(output - expected) <= tol
 
 
 def test_Image_mndwi_band_name():
-    output = landsat.mndwi(toa_image()).getInfo()['bands'][0]['id']
+    output = landsat.mndwi(sr_image()).getInfo()['bands'][0]['id']
     assert output == 'mndwi'
 
 
@@ -94,13 +93,13 @@ def test_Image_mndwi_band_name():
 )
 def test_Image_wri_calculation(green, red, nir, swir2, expected, tol=0.000001):
     output = utils.constant_image_value(landsat.wri(
-        toa_image(green=green, red=red, nir=nir, swir2=swir2)
+        sr_image(green=green, red=red, nir=nir, swir2=swir2)
     ))
     assert abs(output - expected) <= tol
 
 
 def test_Image_wri_band_name():
-    output = landsat.wri(toa_image()).getInfo()['bands'][0]['id']
+    output = landsat.wri(sr_image()).getInfo()['bands'][0]['id']
     assert output == 'wri'
 
 
@@ -121,12 +120,12 @@ def test_Image_wri_band_name():
     ]
 )
 def test_Image_emissivity_ptjpl_calculation(red, nir, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.emissivity_ptjpl(toa_image(red=red, nir=nir)))
+    output = utils.constant_image_value(landsat.emissivity_ptjpl(sr_image(red=red, nir=nir)))
     assert abs(output - expected) <= tol
 
 
 def test_Image_emissivity_disalexi_band_name():
-    output = landsat.emissivity_ptjpl(toa_image()).getInfo()['bands'][0]['id']
+    output = landsat.emissivity_ptjpl(sr_image()).getInfo()['bands'][0]['id']
     assert output == 'emissivity'
 
 
@@ -146,12 +145,12 @@ def test_Image_emissivity_disalexi_band_name():
     ]
 )
 def test_Image_emissivity_metric_calculation(red, nir, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.emissivity_metric(toa_image(red=red, nir=nir)))
+    output = utils.constant_image_value(landsat.emissivity_metric(sr_image(red=red, nir=nir)))
     assert abs(output - expected) <= tol
 
 
 def test_Image_emissivity_metric_band_name():
-    output = landsat.emissivity_metric(toa_image()).getInfo()['bands'][0]['id']
+    output = landsat.emissivity_metric(sr_image()).getInfo()['bands'][0]['id']
     assert output == 'emissivity'
 
 
@@ -163,12 +162,12 @@ def test_Image_emissivity_metric_band_name():
     ]
 )
 def test_Image_lst_calculation(red, nir, bt, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.lst(toa_image(red=red, nir=nir, bt=bt)))
+    output = utils.constant_image_value(landsat.lst(sr_image(red=red, nir=nir, bt=bt)))
     assert abs(output - expected) <= tol
 
 
 def test_Image_lst_band_name():
-    output = landsat.lst(toa_image()).getInfo()['bands'][0]['id']
+    output = landsat.lst(sr_image()).getInfo()['bands'][0]['id']
     assert output == 'lst'
 
 
@@ -179,11 +178,12 @@ def test_Image_lst_band_name():
     ]
 )
 def test_Image_albedo_calculation(blue, green, red, nir, swir1, swir2, expected, tol=0.000001):
-    toa = toa_image(blue=blue, green=green, red=red, nir=nir, swir1=swir1, swir2=swir2)
-    output = utils.constant_image_value(landsat.albedo_metric(toa))
+    output = utils.constant_image_value(landsat.albedo_metric(
+        sr_image(blue=blue, green=green, red=red, nir=nir, swir1=swir1, swir2=swir2)
+    ))
     assert abs(output - expected) <= tol
 
 
 def test_Image_albedo_band_name():
-    output = landsat.albedo_metric(toa_image()).getInfo()['bands'][0]['id']
+    output = landsat.albedo_metric(sr_image()).getInfo()['bands'][0]['id']
     assert output == 'albedo'

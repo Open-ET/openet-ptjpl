@@ -97,7 +97,7 @@ def albedo_metric(landsat_image):
     # )
 
 
-def emissivity_metric(toa_image):
+def emissivity_metric(landsat_image):
     """Emissivity as a function of NDVI
 
     Parameters
@@ -115,7 +115,7 @@ def emissivity_metric(toa_image):
     # TODO: Add METRIC LAI reference
 
     """
-    ndvi_img = ndvi(toa_image)
+    ndvi_img = ndvi(landsat_image)
     lai_img = ndvi_img.pow(3).multiply(7.0).clamp(0, 6).rename(['lai'])
 
     # Initial values are for NDVI > 0 and LAI <= 3

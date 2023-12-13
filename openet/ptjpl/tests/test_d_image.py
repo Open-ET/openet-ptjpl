@@ -12,7 +12,7 @@ import openet.ptjpl.utils as utils
 
 
 # TODO: Try moving to conftest and/or make a fixture
-COLL_ID = 'LANDSAT/LC08/C01/T1_SR/'
+COLL_ID = 'LANDSAT/LC08/C02/T1_L2/'
 SCENE_ID = 'LC08_044033_20170716'
 SCENE_TIME = 1500230731090
 SCENE_DT = datetime.datetime.utcfromtimestamp(SCENE_TIME / 1000.0)
@@ -25,47 +25,60 @@ TEST_POINT = [-120.113, 36.336]
 
 # Should these be test fixtures instead?
 # I'm not sure how to make them fixtures and allow input parameters
-def toa_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2,
-              bt=300):
-    """Construct a fake Landsat 8 TOA image with renamed bands"""
-    return ee.Image.constant([blue, green, red, nir, swir1, swir2, bt]) \
-        .rename(['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'lst']) \
-        .set({
-            'system:time_start': SCENE_TIME,
-            'k1_constant': ee.Number(607.76),
-            'k2_constant': ee.Number(1260.56)})
+# CGM - This function is not currently used
+# def sr_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2, bt=300):
+#     """Construct a fake Landsat 8 image with renamed bands"""
+#     return ee.Image.constant([blue, green, red, nir, swir1, swir2, bt]) \
+#         .rename(['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'lst']) \
+#         .set({
+#             'system:time_start': SCENE_TIME,
+#             'k1_constant': ee.Number(607.76),
+#             'k2_constant': ee.Number(1260.56)})
 
 
-def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8,
-                  ndwi=0.0, mndwi=0.0, wri=0.45):
+def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8, ndwi=0.0, mndwi=0.0, wri=0.45):
     # First construct a fake 'prepped' input image
-    return ee.Image.constant([albedo, emissivity, lst, ndvi, ndwi, mndwi, wri]) \
-        .rename(['albedo', 'emissivity', 'lst', 'ndvi',
-                 'ndwi', 'mndwi', 'wri']) \
+    return (
+        ee.Image.constant([albedo, emissivity, lst, ndvi, ndwi, mndwi, wri])
+        .rename(['albedo', 'emissivity', 'lst', 'ndvi', 'ndwi', 'mndwi', 'wri'])
         .set({
             'system:index': SCENE_ID,
             'system:time_start': SCENE_TIME,
             'system:id': COLL_ID + SCENE_ID,
         })
+    )
 
 
 # Setting etr_source and etr_band on the default image to simplify testing
 #   but these do not have defaults in the Image class init
-def default_image_args(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8,
-                       ndwi=0.0, mndwi=0.0, wri=0.45,
-                       ea_source=1000, LWin_source=440, rs_source=900,
-                       ta_source=315, windspeed_source=0,
-                       topt_source=42, faparmax_source=0.6,
-                       latitude=36, longitude=-120, floor_Topt=True,
-                       et_reference_source=15, et_reference_band='etr',
-                       et_reference_factor=0.85,
-                       et_reference_resample='nearest',
-                       crop_pm_adjust_flag=False,
-                       crop_pm_adjust_source=1,
-                       crop_pm_adjust_band=None,
-                       crop_type_source='USDA/NASS/CDL',
-                       crop_type_remap='CDL',
-                       ):
+def default_image_args(
+        albedo=0.2,
+        emissivity=0.99,
+        lst=300,
+        ndvi=0.8,
+        ndwi=0.0,
+        mndwi=0.0,
+        wri=0.45,
+        ea_source=1000,
+        LWin_source=440,
+        rs_source=900,
+        ta_source=315,
+        windspeed_source=0,
+        topt_source=42,
+        faparmax_source=0.6,
+        latitude=36,
+        longitude=-120,
+        floor_Topt=True,
+        et_reference_source=15,
+        et_reference_band='etr',
+        et_reference_factor=0.85,
+        et_reference_resample='nearest',
+        crop_pm_adjust_flag=False,
+        crop_pm_adjust_source=1,
+        crop_pm_adjust_band=None,
+        crop_type_source='USDA/NASS/CDL',
+        crop_type_remap='CDL',
+        ):
     return {
         'image': default_image(albedo=albedo, emissivity=emissivity, lst=lst,
                                ndvi=ndvi, ndwi=ndwi, mndwi=mndwi, wri=wri),
@@ -91,28 +104,52 @@ def default_image_args(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8,
     }
 
 
-def default_image_obj(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8,
-                      ndwi=0.0, mndwi=0.0, wri=0.45,
-                      ea_source=1000, LWin_source=440, rs_source=900,
-                      ta_source=315, windspeed_source=0,
-                      topt_source=42, faparmax_source=0.6,
-                      latitude=36, longitude=-120, floor_Topt=True,
-                      et_reference_source=15, et_reference_band='etr',
-                      et_reference_factor=0.85,
-                      et_reference_resample='nearest',
-                      crop_pm_adjust_flag=False,
-                      crop_pm_adjust_source=1,
-                      crop_pm_adjust_band=None,
-                      crop_type_source='USDA/NASS/CDL',
-                      crop_type_remap='CDL',
-                      ):
+def default_image_obj(
+        albedo=0.2,
+        emissivity=0.99,
+        lst=300,
+        ndvi=0.8,
+        ndwi=0.0,
+        mndwi=0.0,
+        wri=0.45,
+        ea_source=1000,
+        LWin_source=440,
+        rs_source=900,
+        ta_source=315,
+        windspeed_source=0,
+        topt_source=42,
+        faparmax_source=0.6,
+        latitude=36,
+        longitude=-120,
+        floor_Topt=True,
+        et_reference_source=15,
+        et_reference_band='etr',
+        et_reference_factor=0.85,
+        et_reference_resample='nearest',
+        crop_pm_adjust_flag=False,
+        crop_pm_adjust_source=1,
+        crop_pm_adjust_band=None,
+        crop_type_source='USDA/NASS/CDL',
+        crop_type_remap='CDL',
+        ):
     return ptjpl.Image(**default_image_args(
-        albedo=albedo, emissivity=emissivity, lst=lst,
-        ndvi=ndvi, ndwi=ndwi, mndwi=mndwi, wri=wri,
-        ea_source=ea_source, LWin_source=LWin_source, rs_source=rs_source,
-        ta_source=ta_source, windspeed_source=windspeed_source,
-        topt_source=topt_source, faparmax_source=faparmax_source,
-        latitude=latitude, longitude=longitude, floor_Topt=floor_Topt,
+        albedo=albedo,
+        emissivity=emissivity,
+        lst=lst,
+        ndvi=ndvi,
+        ndwi=ndwi,
+        mndwi=mndwi,
+        wri=wri,
+        ea_source=ea_source,
+        LWin_source=LWin_source,
+        rs_source=rs_source,
+        ta_source=ta_source,
+        windspeed_source=windspeed_source,
+        topt_source=topt_source,
+        faparmax_source=faparmax_source,
+        latitude=latitude,
+        longitude=longitude,
+        floor_Topt=floor_Topt,
         et_reference_source=et_reference_source,
         et_reference_band=et_reference_band,
         et_reference_factor=et_reference_factor,
@@ -333,8 +370,7 @@ def test_Image_windspeed_sources_exception():
         # Test using asset ID string
         ['projects/openet/ptjpl/ancillary/Topt', TEST_POINT, 19.7467],
         ['projects/openet/ptjpl/ancillary/Topt_from_max', TEST_POINT, 15.7395],
-        ['projects/openet/ptjpl/ancillary/Topt_from_max_convolved',
-         TEST_POINT, 15.7395],
+        ['projects/openet/ptjpl/ancillary/Topt_from_max_convolved', TEST_POINT, 15.7395],
         # # Test using ee.Image object
         # [ee.Image('projects/openet/ptjpl/ancillary/Topt'), TEST_POINT, 16.79],
         # Check string/float constant values
@@ -470,8 +506,7 @@ def test_Image_et_reference_properties():
         [10, 'FOO', 0.85, TEST_POINT, 8.5],
     ]
 )
-def test_Image_et_reference_sources(source, band, factor, xy, expected,
-                                    tol=0.001):
+def test_Image_et_reference_sources(source, band, factor, xy, expected, tol=0.001):
     """Test getting reference ET values for a single date at a real point"""
     output = utils.point_image_value(default_image_obj(
         et_reference_source=source, et_reference_band=band,
@@ -578,85 +613,6 @@ def test_Image_calculate_variables_valueerror():
         utils.getinfo(default_image_obj().calculate(['FOO']))
 
 
-# How should these @classmethods be tested?
-def test_Image_from_landsat_c1_toa_default_image():
-    """Test that the classmethod is returning a class object"""
-    output = ptjpl.Image.from_landsat_c1_toa(
-        ee.Image('LANDSAT/LC08/C01/T1_TOA/LC08_044033_20170716')
-    )
-    assert type(output) == type(default_image_obj())
-
-
-@pytest.mark.parametrize(
-    'image_id',
-    [
-        'LANDSAT/LC08/C01/T1_RT_TOA/LC08_044033_20170716',
-        'LANDSAT/LC08/C01/T1_TOA/LC08_044033_20170716',
-        'LANDSAT/LE07/C01/T1_RT_TOA/LE07_044033_20170708',
-        'LANDSAT/LE07/C01/T1_TOA/LE07_044033_20170708',
-        'LANDSAT/LT05/C01/T1_TOA/LT05_044033_20110716',
-        # 'LANDSAT/LT04/C01/T1_TOA/LT04_044033_19830812',
-    ]
-)
-def test_Image_from_landsat_c1_toa_landsat_image(image_id):
-    """Test instantiating the class from a real Landsat images"""
-    output = utils.getinfo(ptjpl.Image.from_landsat_c1_toa(ee.Image(image_id)).NDVI)
-    assert output['properties']['system:index'] == image_id.split('/')[-1]
-
-
-def test_Image_from_landsat_c1_toa_exception():
-    """Test instantiating the class for an invalid image ID"""
-    with pytest.raises(Exception):
-        utils.getinfo(ptjpl.Image.from_landsat_c1_toa(ee.Image('DEADBEEF'))._index)
-
-
-def test_Image_from_landsat_c1_sr_default_image():
-    """Test that the classmethod is returning a class object"""
-    output = ptjpl.Image.from_landsat_c1_sr(
-        ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_044033_20170716')
-    )
-    assert type(output) == type(default_image_obj())
-
-
-@pytest.mark.parametrize(
-    'image_id',
-    [
-        # 'LANDSAT/LC08/C01/T1_RT_SR/LC08_044033_20170716',
-        'LANDSAT/LC08/C01/T1_SR/LC08_044033_20170716',
-        # 'LANDSAT/LE07/C01/T1_RT_SR/LE07_044033_20170708',
-        'LANDSAT/LE07/C01/T1_SR/LE07_044033_20170708',
-        'LANDSAT/LT05/C01/T1_SR/LT05_044033_20110716',
-        # 'LANDSAT/LT04/C01/T1_SR/LT04_044033_19830812',
-    ]
-)
-def test_Image_from_landsat_c1_sr_landsat_image(image_id):
-    """Test instantiating the class from a real Landsat images"""
-    output = utils.getinfo(ptjpl.Image.from_landsat_c1_sr(ee.Image(image_id)).NDVI)
-    assert output['properties']['system:index'] == image_id.split('/')[-1]
-
-
-def test_Image_from_landsat_c1_sr_exception():
-    """Test instantiating the class for an invalid image ID"""
-    with pytest.raises(Exception):
-        utils.getinfo(ptjpl.Image.from_landsat_c1_sr(ee.Image('DEADBEEF'))._index)
-
-
-def test_Image_from_landsat_c1_sr_scaling():
-    """Test if Landsat SR images images are being scaled"""
-    sr_img = ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_044033_20170716')
-    input_img = (
-        ee.Image.constant([100, 100, 100, 100, 100, 100, 3000.0, 322])
-        .rename(['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B10', 'pixel_qa'])
-        .set({'SATELLITE': ee.String(sr_img.get('SATELLITE')),
-              'system:id': ee.String(sr_img.get('system:id')),
-              'system:index': ee.String(sr_img.get('system:index')),
-              'system:time_start': ee.Number(sr_img.get('system:time_start'))})
-    )
-    output = utils.constant_image_value(ptjpl.Image.from_landsat_c1_sr(input_img).LST)
-    # Won't be exact because of emissivity correction
-    assert abs(output - 300) <= 10
-
-
 def test_Image_from_landsat_c2_sr_default_image():
     """Test that the classmethod is returning a class object"""
     output = ptjpl.Image.from_landsat_c2_sr(
@@ -744,7 +700,6 @@ def test_Image_from_landsat_c2_sr_c2_lst_correct_fill():
 @pytest.mark.parametrize(
     'image_id',
     [
-        'LANDSAT/LC08/C01/T1_SR/LC08_044033_20170716',
         'LANDSAT/LC08/C02/T1_L2/LC08_044033_20170716',
         'LANDSAT/LC09/C02/T1_L2/LC09_044033_20220127',
     ]
@@ -758,8 +713,8 @@ def test_Image_from_image_id(image_id):
 
 def test_Image_from_method_kwargs():
     """Test that the init parameters can be passed through the helper methods"""
-    assert ptjpl.Image.from_landsat_c1_sr(
-        'LANDSAT/LC08/C01/T1_SR/LC08_042035_20150713',
+    assert ptjpl.Image.from_landsat_c2_sr(
+        'LANDSAT/LC08/C02/T1_L2/LC08_042035_20150713',
         ea_source='FOO').ea_source == 'FOO'
 
 
@@ -814,7 +769,6 @@ def test_Model_crop_type_source_cdl_image_exception():
 @pytest.mark.parametrize(
     'crop_type_source',
     [
-        'projects/openet/crop_type/v2020c',
         'projects/openet/crop_type/v2021a',
         'projects/earthengine-legacy/assets/projects/openet/crop_type/v2021a',
     ]
@@ -830,7 +784,6 @@ def test_Model_crop_type_source_openet_crop_type(crop_type_source):
     [
         ['USDA/NASS/CDL', TEST_POINT, 36],
         ['USDA/NASS/CDL/2016', TEST_POINT, 36],
-        ['projects/openet/crop_type/v2020c', TEST_POINT, 47],
         ['projects/openet/crop_type/v2021a', TEST_POINT, 47],
         ['projects/earthengine-legacy/assets/projects/openet/crop_type/v2021a', TEST_POINT, 47],
     ]
