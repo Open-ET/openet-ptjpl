@@ -32,6 +32,8 @@ def lazy_property(fn):
 class Image:
     """Earth Engine based PT-JPL Image"""
 
+    _C2_LST_CORRECT = False  # Enable (True) C2 LST correction to recalculate LST
+
     def __init__(
             self, image,
             windspeed_source='NLDAS',
@@ -1144,12 +1146,26 @@ class Image:
 
         cloud_mask = openet.core.common.landsat_c2_sr_cloud_mask(sr_image, **cloudmask_args)
 
+        # Check if passing c2_lst_correct or soil_emis_coll_id arguments
+        if "c2_lst_correct" in kwargs.keys():
+            assert isinstance(kwargs['c2_lst_correct'], bool), "selection type must be a boolean"
+            # Remove from kwargs since it is not a valid argument for Image init
+            c2_lst_correct = kwargs.pop('c2_lst_correct')
+        else:
+            c2_lst_correct = cls._C2_LST_CORRECT
+
+        if c2_lst_correct:
+            lst = openet.core.common.landsat_c2_sr_lst_correct(sr_image, landsat.ndvi(prep_image))
+        else:
+            lst = prep_image.select(['tir'])
+
         # Build the input image
         input_image = ee.Image([
             landsat.albedo_metric(prep_image),
             landsat.emissivity_metric(prep_image),
+            lst.rename(['lst']),
             # CGM - Don't compute LST since it is being provided
-            prep_image.select(['tir'], ['lst']),
+            # prep_image.select(['tir'], ['lst']),
             # landsat.lst(prep_image),
             landsat.ndvi(prep_image),
             landsat.ndwi(prep_image),

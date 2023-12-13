@@ -715,6 +715,32 @@ def test_Image_from_landsat_c2_sr_cloud_mask_args():
     assert type(output) == type(default_image_obj())
 
 
+def test_Image_from_landsat_c2_sr_c2_lst_correct_arg():
+    """Test if the c2_lst_correct parameter can be set (not if it works)"""
+    image_id = 'LANDSAT/LC08/C02/T1_L2/LC08_031034_20160702'
+    output = ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=True)
+    assert type(output) == type(default_image_obj())
+
+
+def test_Image_from_landsat_c2_sr_c2_lst_correct_fill():
+    """Test if the c2_lst_correct fills the LST holes in Nebraska"""
+    image_id = 'LANDSAT/LC08/C02/T1_L2/LC08_031034_20160702'
+    point_xy = [-102.08284, 37.81728]
+    # CGM - Is the uncorrected test needed?
+    uncorrected = utils.point_image_value(
+        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=False).LST,
+        point_xy)
+    assert uncorrected is None
+    # assert uncorrected['lst'] is None
+    corrected = utils.point_image_value(
+        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=True).LST,
+        point_xy)
+    assert corrected > 0
+    # assert corrected['lst'] > 0
+    # # Exact test values copied from openet-core
+    # assert abs(corrected['lst'] - 306.83) <= 0.25
+
+
 @pytest.mark.parametrize(
     'image_id',
     [
@@ -761,7 +787,7 @@ def test_Model_crop_type_constant_value():
 )
 def test_Model_crop_type_source_cdl_collection(year, expected):
     """Test that the CDL collection is filtered to a single year and is limited
-    to years with data (2008-2018 as of 7/15/2019)
+    to years with data
     """
     image = default_image_obj(crop_type_source='USDA/NASS/CDL')
     image._year = year
