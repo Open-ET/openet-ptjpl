@@ -128,7 +128,7 @@ References
  | Priestley, C. and R. Taylor (1972). On the assessment of surface heat flux and evaporation using large scale parameters. *Monthly Weather Review*, 100, 81–92.
  | `https://doi.org/10.1175/1520-0493%281972%29100%3C0081%3AOTAOSH%3E2.3.CO%3B2 <https://doi.org/10.1175/1520-0493%281972%29100%3C0081%3AOTAOSH%3E2.3.CO%3B2>`__
 
-.. |build| image:: https://github.com/Open-ET/openet-ptjpl/workflows/build/badge.svg
+.. |build| image:: https://github.com/Open-ET/openet-ptjpl/actions/workflows/tests.yml/badge.svg
    :alt: Build status
    :target: https://github.com/Open-ET/openet-ptjpl
 .. |version| image:: https://badge.fury.io/py/openet-ptjpl.svg
