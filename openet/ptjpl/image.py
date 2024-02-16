@@ -965,7 +965,7 @@ class Image:
             cloudmask_args['cloud_score_flag'] = True
         if 'cloud_score_pct' not in cloudmask_args.keys():
             cloudmask_args['cloud_score_pct'] = True
-        # QA_RADSAT band will need to be added above if applying
+        # QA_RADSAT band will need to be added above if applying saturated masking
         # if 'saturated_flag' not in cloudmask_args.keys():
         #     cloudmask_args['saturated_flag'] = False
 
