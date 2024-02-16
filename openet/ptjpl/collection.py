@@ -1,5 +1,6 @@
 import copy
 import datetime
+from importlib import metadata
 # import pprint
 
 from dateutil.relativedelta import relativedelta
@@ -10,11 +11,6 @@ import openet.core.interpolate as interpolate
 
 from . import utils
 from .image import Image
-
-try:
-    from importlib import metadata
-except ImportError:  # for Python<3.8
-    import importlib_metadata as metadata
 
 
 def lazy_property(fn):
