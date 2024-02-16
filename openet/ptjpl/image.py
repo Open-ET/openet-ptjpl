@@ -783,8 +783,7 @@ class Image:
         Move image time 30 minutes earlier to simplify filtering/interpolation
 
         """
-        nldas_coll = ee.ImageCollection('NASA/NLDAS/FORA0125_H002') \
-            .select([band_name])
+        nldas_coll = ee.ImageCollection('NASA/NLDAS/FORA0125_H002').select([band_name])
 
         if interp_flag:
             # Interpolate
@@ -962,8 +961,13 @@ class Image:
             cloudmask_args['shadow_flag'] = True
         if 'snow_flag' not in cloudmask_args.keys():
             cloudmask_args['snow_flag'] = True
+        if 'cloud_score_flag' not in cloudmask_args.keys():
+            cloudmask_args['cloud_score_flag'] = True
+        if 'cloud_score_pct' not in cloudmask_args.keys():
+            cloudmask_args['cloud_score_pct'] = True
+        # QA_RADSAT band will need to be added above if applying
         # if 'saturated_flag' not in cloudmask_args.keys():
-        #     cloudmask_args['saturated_flag'] = True
+        #     cloudmask_args['saturated_flag'] = False
 
         cloud_mask = openet.core.common.landsat_c2_sr_cloud_mask(sr_image, **cloudmask_args)
 
@@ -1097,23 +1101,39 @@ class Image:
         # It is identical to the remap in ensemble_interpolate_asset_export.py
         #   except that wetlands (87, 190, 195) are being included.
         # TODO: This remap should probably be set from an external file
-        return self.crop_type\
-            .remap(
+        return (
+            self.crop_type.remap(
                 list(range(0, 255)),
-                [0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-                 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0,
-                 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-                 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])\
+                [0, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+                 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                 1, 0, 0, 0, 0, 0, 1, 1, 1, 1,
+                 1, 1, 1, 0, 1, 1, 1, 1, 1, 0,
+                 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 # 100
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 # 200
+                 1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+                 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                 1, 1, 1, 1, 1])
             .rename('crop_mask').set(self._properties)
+        )
 
     @lazy_property
     def crop_pm_adjust(self):
@@ -1130,14 +1150,12 @@ class Image:
             # Assume a string source is an image ID
             crop_pm_adjust_img = ee.Image(self.crop_pm_adjust_source)
             if self.crop_pm_adjust_band:
-                crop_pm_adjust_img = crop_pm_adjust_img\
-                    .select([self.crop_pm_adjust_band])
+                crop_pm_adjust_img = crop_pm_adjust_img.select([self.crop_pm_adjust_band])
             else:
                 crop_pm_adjust_img = crop_pm_adjust_img.select([0])
             crop_pm_adjust_img = crop_pm_adjust_img.resample(DOWNSAMPLE_METHOD)
             # if DOWNSAMPLE_METHOD in ['bilinear', 'bicubic']:
-            #     crop_pm_adjust_img = crop_pm_adjust_img \
-            #         .resample(DOWNSAMPLE_METHOD)
+            #     crop_pm_adjust_img = crop_pm_adjust_img.resample(DOWNSAMPLE_METHOD)
         else:
             raise ValueError(f'unsupported crop_pm_adjust_source: '
                              f'{self.crop_pm_adjust_source}')
