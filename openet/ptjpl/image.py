@@ -909,12 +909,12 @@ class Image:
 
     @classmethod
     def from_landsat_c2_sr(cls, sr_image, cloudmask_args={}, **kwargs):
-        """Returns a PT-JPL Image instance from a Landsat Collection 2 SR image
+        """Returns a PT-JPL Image instance from a Landsat C02 level 2 (SR) image
 
         Parameters
         ----------
-        sr_image : ee.Image
-            A raw Landsat Collection 2 SR image.
+        sr_image : ee.Image, str
+            A raw Landsat Collection 2 level 2 (SR) image or image ID.
         cloudmask_args : dict
             keyword arguments to pass through to cloud mask function
         kwargs : dict
@@ -964,7 +964,9 @@ class Image:
         if 'cloud_score_flag' not in cloudmask_args.keys():
             cloudmask_args['cloud_score_flag'] = True
         if 'cloud_score_pct' not in cloudmask_args.keys():
-            cloudmask_args['cloud_score_pct'] = True
+            cloudmask_args['cloud_score_pct'] = 100
+        if 'filter_flag' not in cloudmask_args.keys():
+            cloudmask_args['filter_flag'] = False
         # QA_RADSAT band will need to be added above if applying saturated masking
         # if 'saturated_flag' not in cloudmask_args.keys():
         #     cloudmask_args['saturated_flag'] = False
@@ -1011,7 +1013,6 @@ class Image:
         # Instantiate the class
         return cls(input_image, **kwargs)
 
-    # CGM - Copied from _crop_type() in the SIMS model.py
     @lazy_property
     def crop_type(self):
         """Crop type
@@ -1037,6 +1038,10 @@ class Image:
         Raises
         ------
         ValueError for unsupported crop_type_sources
+
+        Notes
+        -----
+        Copied from _crop_type() in the OpenET SIMS model.py
 
         """
         properties = ee.Dictionary()
@@ -1072,7 +1077,8 @@ class Image:
             crop_type_img = ee.Image(self.crop_type_source).select(['cropland'])
             properties = properties.set('id', crop_type_img.get('system:id'))
         elif (type(self.crop_type_source) is str and
-                'projects/openet/crop_type' in self.crop_type_source.lower()):
+              (('projects/openet/crop_type' in self.crop_type_source.lower()) or
+               ('projects/openet/assets/crop_type' in self.crop_type_source.lower()))):
             # Use the crop_type image closest to the image date
             crop_coll = ee.ImageCollection(self.crop_type_source)
             cdl_year = (

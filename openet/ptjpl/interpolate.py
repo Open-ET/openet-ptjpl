@@ -143,14 +143,18 @@ def from_scene_et_fraction(
     if type(et_reference_source) is str:
         # Assume a string source is an single image collection ID
         #   not an list of collection IDs or ee.ImageCollection
-        daily_et_ref_coll = ee.ImageCollection(et_reference_source) \
-            .filterDate(start_date, end_date) \
+        daily_et_ref_coll = (
+            ee.ImageCollection(et_reference_source)
+            .filterDate(start_date, end_date)
             .select([et_reference_band], ['et_reference'])
+        )
     # elif isinstance(et_reference_source, computedobject.ComputedObject):
     #     # Interpret computed objects as image collections
-    #     daily_et_reference_coll = et_reference_source \
-    #         .filterDate(self.start_date, self.end_date) \
+    #     daily_et_reference_coll = (
+    #         et_reference_source
+    #         .filterDate(self.start_date, self.end_date)
     #         .select([et_reference_band])
+    #     )
     else:
         raise ValueError(f'unsupported et_reference_source: {et_reference_source}')
 
@@ -212,7 +216,8 @@ def from_scene_et_fraction(
     if 'count' in variables:
         aggregate_coll = openet.core.interpolate.aggregate_to_daily(
             image_coll=scene_coll.select(['mask']),
-            start_date=start_date, end_date=end_date)
+            start_date=start_date, end_date=end_date,
+        )
         # The following is needed because the aggregate collection can be
         #   empty if there are no scenes in the target date range but there
         #   are scenes in the interpolation date range.
@@ -232,7 +237,7 @@ def from_scene_et_fraction(
         interp_method=interp_method,
         interp_days=interp_days,
         use_joins=use_joins,
-        compute_product=False
+        compute_product=False,
     )
 
     # Compute ET from ETf and ETr (if necessary)
@@ -506,8 +511,8 @@ def from_scene_et_actual(
         #     logging.debug('et_reference_resample was not set, default to nearest')
         #     # raise ValueError('et_reference_resample was not set')
 
-        # Assume a string source is an single image collection ID
-        #   not an list of collection IDs or ee.ImageCollection
+        # Assume a string source is a single image collection ID
+        #   not a list of collection IDs or ee.ImageCollection
         daily_et_ref_coll_id = model_args['et_reference_source']
         daily_et_ref_coll = (
             ee.ImageCollection(daily_et_ref_coll_id)

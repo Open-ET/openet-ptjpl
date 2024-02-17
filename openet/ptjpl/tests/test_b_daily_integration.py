@@ -40,7 +40,7 @@ def test_day_angle_rad_from_doy_image(rn, hour_of_day, sunrise_hour,
         sunrise_hour=ee.Image.constant(sunrise_hour),
         daylight_hours=ee.Image.constant(daylight_hours),
     ))
-    assert abs(output - expected) <= tol
+    assert abs(output['constant'] - expected) <= tol
 
 
 @pytest.mark.parametrize(

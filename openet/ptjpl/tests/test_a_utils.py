@@ -47,7 +47,7 @@ def test_point_coll_value(image_id, image_date, xy, scale, expected, tol):
 
 def test_c_to_k(c=20, k=293.15, tol=0.000001):
     output = utils.constant_image_value(utils.c_to_k(ee.Image.constant(c)))
-    assert abs(output - k) <= tol
+    assert abs(output['constant'] - k) <= tol
 
 
 @pytest.mark.parametrize(

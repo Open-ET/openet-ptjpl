@@ -38,7 +38,7 @@ def test_sha_deg_from_doy_lat(doy, latitude, expected, tol=0.000001):
         ee.Number(doy), ee.Image.constant(latitude)
     ))
     # output = utils.getinfo(dh.sha_deg_from_doy_lat(ee.Number(doy), ee.Number(latitude)))
-    assert abs(output - expected) <= tol
+    assert abs(output['constant'] - expected) <= tol
 
 
 @pytest.mark.parametrize(

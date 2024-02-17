@@ -34,9 +34,9 @@ def test_Model_Rns_calculation(Rn, LAI, water_mask, expected, tol=0.001):
         water_mask=ee.Image.constant(water_mask)
     ))
     if expected is None:
-        assert output is None
+        assert output['constant'] is None
     else:
-        assert abs(output - expected) <= tol
+        assert abs(output['constant'] - expected) <= tol
 
 
 # @pytest.mark.parametrize(
@@ -53,7 +53,7 @@ def test_Model_Rns_calculation(Rn, LAI, water_mask, expected, tol=0.001):
 #         Rn=ee.Image.constant(Rn), fIPAR=ee.Image.constant(fIPAR),
 #         Rns=ee.Image.constant(Rns), W=ee.Image.constant(W),
 #         water_mask=ee.Image.constant(water_mask)))
-#     assert abs(output - expected) <= tol
+#     assert abs(output['constant'] - expected) <= tol
 
 
 # @pytest.mark.parametrize(
@@ -83,5 +83,5 @@ def test_Model_Rns_calculation(Rn, LAI, water_mask, expected, tol=0.001):
 #     )
 #     output = utils.constant_image_value(output_image)
 #     logging.debug(f'\n  Target values: {expected}')
-#     logging.debug(f'  Output values: {output}')
-#     assert abs(output - expected) <= tol
+#     logging.debug(f'  Output values: {output['constant']}')
+#     assert abs(output['constant'] - expected) <= tol

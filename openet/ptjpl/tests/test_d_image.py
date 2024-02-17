@@ -241,7 +241,7 @@ def test_Image_nldas_interpolate(band, time, interp_flag, xy, expected, tol=0.00
     output = utils.point_image_value(
         ptjpl.Image.nldas_interpolate(band, ee.Date(time), interp_flag), xy
     )
-    assert abs(output - expected) <= tol
+    assert abs(output[band] - expected) <= tol
 
 
 @pytest.mark.parametrize(
@@ -260,7 +260,7 @@ def test_Image_ea_sources(ea_source, xy, expected, tol=0.01):
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
     output = utils.point_image_value(ee.Image(m.ea), xy)
-    assert abs(output - expected) <= tol
+    assert abs(output['ea'] - expected) <= tol
 
 
 def test_Image_ea_sources_exception():
@@ -284,7 +284,7 @@ def test_Image_LWin_sources(LWin_source, xy, expected, tol=0.01):
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
     output = utils.point_image_value(ee.Image(m.LWin), xy)
-    assert abs(output - expected) <= tol
+    assert abs(output['LWin'] - expected) <= tol
 
 
 def test_Image_LWin_sources_exception():
@@ -308,7 +308,7 @@ def test_Image_rs_sources(rs_source, xy, expected, tol=0.0001):
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
     output = utils.point_image_value(ee.Image(m.rs), xy)
-    assert abs(output - expected) <= tol
+    assert abs(output['rs'] - expected) <= tol
 
 
 def test_Image_rs_sources_exception():
@@ -332,7 +332,7 @@ def test_Image_ta_sources(ta_source, xy, expected, tol=0.0001):
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
     output = utils.point_image_value(ee.Image(m.ta), xy)
-    assert abs(output - expected) <= tol
+    assert abs(output['Ta'] - expected) <= tol
 
 
 def test_Image_ta_sources_exception():
@@ -356,7 +356,7 @@ def test_Image_windspeed_sources(windspeed_source, xy, expected, tol=0.0001):
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
     output = utils.point_image_value(ee.Image(m.U), xy)
-    assert abs(output - expected) <= tol
+    assert abs(output['U'] - expected) <= tol
 
 
 def test_Image_windspeed_sources_exception():
@@ -385,13 +385,13 @@ def test_Image_topt_sources(topt_source, xy, expected, tol=0.001):
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
     output = utils.point_image_value(ee.Image(m.Topt), xy)
-    assert abs(output - expected) <= tol
+    assert abs(output['Topt'] - expected) <= tol
 
 
 def test_Image_topt_floor(topt_source=15, ta_source=40, tol=0.001):
     m = default_image_obj(topt_source=topt_source, ta_source=ta_source+273.15, floor_Topt=True)
     output = utils.point_image_value(ee.Image(m.Topt), TEST_POINT)
-    assert abs(output - ta_source) <= tol
+    assert abs(output['Topt'] - ta_source) <= tol
 
 
 def test_Image_topt_sources_exception():
@@ -420,7 +420,7 @@ def test_Image_faparmax_sources(faparmax_source, xy, expected, tol=0.0001):
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
     output = utils.point_image_value(ee.Image(m.fAPARmax), xy)
-    assert abs(output - expected) <= tol
+    assert abs(output['fAPARmax'] - expected) <= tol
 
 
 def test_Image_faparmax_sources_exception():
@@ -440,22 +440,23 @@ def test_Image_SWin_properties():
 
 def test_Image_SWin_value():
     """Test that a non-zero value is returned for the default inputs"""
-    assert utils.constant_image_value(default_image_obj().SWin) > 0
+    output = utils.constant_image_value(ee.Image(default_image_obj().SWin))
+    assert output['SWin'] > 0
 
 
 def test_Image_LE_defaults(expected=517.674, tol=0.001):
     output = utils.constant_image_value(ee.Image(default_image_obj().LE))
-    assert abs(output - expected) <= tol
+    assert abs(output['LE'] - expected) <= tol
 
 
 def test_Image_PET_defaults(expected=718.188, tol=0.001):
     output = utils.constant_image_value(ee.Image(default_image_obj().PET))
-    assert abs(output - expected) <= tol
+    assert abs(output['PET'] - expected) <= tol
 
 
 def test_Image_ESI_defaults(expected=0.721, tol=0.001):
     output = utils.constant_image_value(ee.Image(default_image_obj().ESI))
-    assert abs(output - expected) <= tol
+    assert abs(output['ESI'] - expected) <= tol
 
 
 def test_Image_et_properties():
@@ -469,7 +470,7 @@ def test_Image_et_properties():
 
 def test_Image_et_defaults(expected=6.128, tol=0.001):
     output = utils.constant_image_value(ee.Image(default_image_obj().et))
-    assert abs(output - expected) <= tol
+    assert abs(output['et'] - expected) <= tol
 
 
 # CGM - Test if there are any conditions that should return nodata
@@ -480,10 +481,9 @@ def test_Image_et_defaults(expected=6.128, tol=0.001):
 #     ]
 # )
 # def test_Image_et_nodata(albedo, emissivity, lst, ndvi, expected):
-#     output_img = default_image_obj(albedo=albedo, emissivity=emissivity,
-#                                    lst=lst, ndvi=ndvi)
+#     output_img = default_image_obj(albedo=albedo, emissivity=emissivity, lst=lst, ndvi=ndvi)
 #     output = utils.constant_image_value(ee.Image(output_img.et))
-#     assert output is None
+#     assert output['et'] is None
 
 
 def test_Image_et_reference_properties():
@@ -500,8 +500,12 @@ def test_Image_et_reference_properties():
     [
         ['IDAHO_EPSCOR/GRIDMET', 'etr', 1, TEST_POINT, 12.9],
         ['IDAHO_EPSCOR/GRIDMET', 'etr', 0.85, TEST_POINT, 12.9 * 0.85],
-        ['projects/earthengine-legacy/assets/projects/climate-engine/cimis/daily',
-         'ETr_ASCE', 1, TEST_POINT, 11.7839],
+        ['projects/openet/assets/reference_et/california/cimis/daily/v1',
+         'etr', 1, TEST_POINT, 11.7893],
+        ['projects/openet/reference_et/california/cimis/daily/v1',
+         'etr', 1, TEST_POINT, 11.7893],
+        ['projects/earthengine-legacy/assets/projects/openet/reference_et/california/cimis/daily/v1',
+         'etr', 1, TEST_POINT, 11.7893],
         [10, 'FOO', 1, TEST_POINT, 10.0],
         [10, 'FOO', 0.85, TEST_POINT, 8.5],
     ]
@@ -511,14 +515,14 @@ def test_Image_et_reference_sources(source, band, factor, xy, expected, tol=0.00
     output = utils.point_image_value(default_image_obj(
         et_reference_source=source, et_reference_band=band,
         et_reference_factor=factor).et_reference, xy)
-    assert abs(output - expected) <= tol
+    assert abs(output['et_reference'] - expected) <= tol
 
 
 # # DEADBEEF - Current implementation does not use etr_source for computing etr
 # def test_Image_etr_values(etr_source=15, etr_factor=0.85, tol=0.0001):
 #     output = utils.constant_image_value(default_image_obj(
 #         etr_source=etr_source, etr_factor=etr_factor).etr)
-#     assert abs(output - etr_source * etr_factor) <= tol
+#     assert abs(output['constant'] - etr_source * etr_factor) <= tol
 
 
 def test_Image_et_fraction_properties():
@@ -531,17 +535,15 @@ def test_Image_et_fraction_properties():
 
 
 # def test_Image_et_fraction_defaults(expected=0.721, tol=0.001):
-#     output = utils.constant_image_value(
-#         ee.Image(default_image_obj().et_fraction))
-#     assert abs(output - expected) <= tol
+#     output = utils.constant_image_value(ee.Image(default_image_obj().et_fraction))
+#     assert abs(output['et_fraction'] - expected) <= tol
 
 
 # # DEADBEEF - Current implementation does not use etr_source for computing etr
-# def test_Image_etf_values(etr_source=15, etr_factor=0.85, expected=13.335,
-#                           tol=0.0001):
+# def test_Image_etf_values(etr_source=15, etr_factor=0.85, expected=13.335, tol=0.0001):
 #     output = utils.constant_image_value(default_image_obj(
 #         etr_source=etr_source, etr_factor=etr_factor).etf)
-#     assert abs(output - expected / (etr_source * etr_factor)) <= tol
+#     assert abs(output['etf'] - expected / (etr_source * etr_factor)) <= tol
 
 
 # CGM - Can't check mask, time, and calculate() until ET is working
@@ -555,7 +557,7 @@ def test_Image_mask_properties():
 
 
 def test_Image_mask_values():
-    assert utils.constant_image_value(default_image_obj().mask) == 1
+    assert utils.constant_image_value(default_image_obj().mask)['mask'] == 1
 
 
 def test_Image_time_properties():
@@ -570,7 +572,7 @@ def test_Image_time_properties():
 def test_Image_time_values():
     """The time band should have the 0 UTC time in it for interpolation"""
     assert utils.constant_image_value(
-        default_image_obj().time) == utils.millis(SCENE_0UTC_DT)
+        default_image_obj().time)['time'] == utils.millis(SCENE_0UTC_DT)
 
 
 def test_Image_calculate_properties():
@@ -602,9 +604,9 @@ def test_Image_calculate_values():
     """Test if the calculate method returns values"""
     output_img = default_image_obj().calculate(['et'])
     # output_img = default_image_obj().calculate(['et', 'et_reference', 'et_fraction'])
-    assert utils.constant_image_value(output_img.select(['et'])) > 0
-    # assert utils.constant_image_value(output_img.select(['et_reference'])) > 0
-    # assert utils.constant_image_value(output_img.select(['et_fraction'])) > 0
+    assert utils.constant_image_value(output_img.select(['et']))['et'] > 0
+    # assert utils.constant_image_value(output_img.select(['et_reference']))['et_reference'] > 0
+    # assert utils.constant_image_value(output_img.select(['et_fraction']))['et_fraction'] > 0
 
 
 def test_Image_calculate_variables_valueerror():
@@ -617,6 +619,7 @@ def test_Image_from_landsat_c2_sr_default_image():
     """Test that the classmethod is returning a class object"""
     output = ptjpl.Image.from_landsat_c2_sr(
         ee.Image('LANDSAT/LC08/C02/T1_L2/LC08_038031_20130828')
+        # 'LANDSAT/LC08/C02/T1_L2/LC08_038031_20130828'
     )
     assert type(output) == type(default_image_obj())
 
@@ -624,8 +627,8 @@ def test_Image_from_landsat_c2_sr_default_image():
 @pytest.mark.parametrize(
     'image_id',
     [
-        # 'LANDSAT/LT04/C02/T1_L2/LT04_044033_19830812',
-        # 'LANDSAT/LT05/C02/T1_L2/LT05_044033_20110716',
+        'LANDSAT/LT04/C02/T1_L2/LT04_044033_19830812',
+        'LANDSAT/LT05/C02/T1_L2/LT05_044033_20110716',
         'LANDSAT/LE07/C02/T1_L2/LE07_044033_20170708',
         'LANDSAT/LC08/C02/T1_L2/LC08_044033_20170716',
         'LANDSAT/LC09/C02/T1_L2/LC09_044033_20220127',
@@ -640,7 +643,8 @@ def test_Image_from_landsat_c2_sr_landsat_image(image_id):
 def test_Image_from_landsat_c2_sr_exception():
     """Test instantiating the class for an invalid image ID"""
     with pytest.raises(Exception):
-        utils.getinfo(ptjpl.Image.from_landsat_c2_sr(ee.Image('DEADBEEF'))._index)
+        # Intentionally using .getInfo() since utils.getinfo() might catch the exception
+        ptjpl.Image.from_landsat_c2_sr(ee.Image('FOO')).ndvi.getInfo()
 
 
 def test_Image_from_landsat_c2_sr_scaling():
@@ -655,44 +659,55 @@ def test_Image_from_landsat_c2_sr_scaling():
               'system:time_start': ee.Number(sr_img.get('system:time_start'))})
     )
 
-    output = utils.constant_image_value(ptjpl.Image.from_landsat_c2_sr(input_img).albedo)
-    assert abs(output - 0.1) <= 0.01
+    # LST correction and cloud score masking do not work with a constant image
+    #   and must be explicitly set to False
+    output = utils.constant_image_value(ptjpl.Image.from_landsat_c2_sr(
+        input_img, c2_lst_correct=False,
+        cloudmask_args={'cloud_score_flag': False, 'filter_flag': False}).albedo)
+    assert abs(output['albedo'] - 0.1) <= 0.01
 
-    output = utils.constant_image_value(ptjpl.Image.from_landsat_c2_sr(input_img).LST)
-    assert abs(output - 300) <= 0.1
+    output = utils.constant_image_value(ptjpl.Image.from_landsat_c2_sr(
+        input_img, c2_lst_correct=False,
+        cloudmask_args={'cloud_score_flag': False, 'filter_flag': False}).LST)
+    assert abs(output['lst'] - 300) <= 0.1
 
 
 def test_Image_from_landsat_c2_sr_cloud_mask_args():
     """Test if the cloud_mask_args parameter can be set (not if it works)"""
-    image_id = 'LANDSAT/LC08/C02/T1_L2/LC08_044033_20170716'
     output = ptjpl.Image.from_landsat_c2_sr(
-        image_id, cloudmask_args={'snow_flag': True, 'cirrus_flag': True}
+        'LANDSAT/LC08/C02/T1_L2/LC08_044033_20170716',
+        cloudmask_args={'snow_flag': True, 'cirrus_flag': True}
     )
+    assert type(output) == type(default_image_obj())
+
+
+def test_Image_from_landsat_c2_sr_cloud_score_mask_arg():
+    """Test if the cloud_score_flag parameter can be set in cloudmask_args"""
+    output = ptjpl.Image.from_landsat_c2_sr(
+        'LANDSAT/LC08/C02/T1_L2/LC08_044033_20170716',
+        cloudmask_args={'cloud_score_flag': True, 'cloud_score_pct': 50})
     assert type(output) == type(default_image_obj())
 
 
 def test_Image_from_landsat_c2_sr_c2_lst_correct_arg():
     """Test if the c2_lst_correct parameter can be set (not if it works)"""
-    image_id = 'LANDSAT/LC08/C02/T1_L2/LC08_031034_20160702'
-    output = ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=True)
+    output = ptjpl.Image.from_landsat_c2_sr(
+        'LANDSAT/LC08/C02/T1_L2/LC08_031034_20160702', c2_lst_correct=True)
     assert type(output) == type(default_image_obj())
 
 
 def test_Image_from_landsat_c2_sr_c2_lst_correct_fill():
     """Test if the c2_lst_correct fills the LST holes in Nebraska"""
     image_id = 'LANDSAT/LC08/C02/T1_L2/LC08_031034_20160702'
-    point_xy = [-102.08284, 37.81728]
+    xy = [-102.08284, 37.81728]
+
     # CGM - Is the uncorrected test needed?
     uncorrected = utils.point_image_value(
-        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=False).LST,
-        point_xy)
-    assert uncorrected is None
-    # assert uncorrected['lst'] is None
+        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=False).LST, xy)
+    assert uncorrected['lst'] is None
     corrected = utils.point_image_value(
-        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=True).LST,
-        point_xy)
-    assert corrected > 0
-    # assert corrected['lst'] > 0
+        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=True).LST, xy)
+    assert corrected['lst'] > 0
     # # Exact test values copied from openet-core
     # assert abs(corrected['lst'] - 306.83) <= 0.25
 
@@ -722,12 +737,13 @@ def test_Image_from_method_kwargs():
 # CGM - Copied from SIMS test_b_model.py
 def test_Model_crop_type_source_exception():
     with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(crop_type_source='FOO').crop_type)
+        # Intentionally using .getInfo() since utils.getinfo() might catch the exception
+        default_image_obj(crop_type_source='FOO').crop_type.getInfo()
 
 
 def test_Model_crop_type_constant_value():
     output = utils.constant_image_value(default_image_obj(crop_type_source=10).crop_type)
-    assert output == 10
+    assert output['crop_type'] == 10
 
 
 @pytest.mark.parametrize(
@@ -758,19 +774,17 @@ def test_Model_crop_type_source_cdl_image():
 def test_Model_crop_type_source_cdl_image_exception():
     """Requesting a CDL image that doesn't exist should raise an EE exception"""
     with pytest.raises(Exception):
-        utils.getinfo(default_image_obj(crop_type_source='USDA/NASS/CDL/2099'))
-        # CGM - The exception is raised in the _crop_type() method which is
-        #   in the init.  If crop_type is a lazy property then it is necessary
-        #   to request the property in order to raise the exception.
-        # utils.getinfo(default_model_obj(
-        #     crop_type_source='USDA/NASS/CDL/2099').crop_type)
+        # Intentionally using .getInfo() since utils.getinfo() might catch the exception
+        default_image_obj(crop_type_source='USDA/NASS/CDL/2099').crop_type.getInfo()
 
 
 @pytest.mark.parametrize(
     'crop_type_source',
     [
-        'projects/openet/crop_type/v2021a',
-        'projects/earthengine-legacy/assets/projects/openet/crop_type/v2021a',
+        'projects/openet/assets/crop_type/v2023a',
+        'projects/openet/assets/crop_type/v2021a',
+        # 'projects/openet/crop_type/v2021a',
+        # 'projects/earthengine-legacy/assets/projects/openet/crop_type/v2021a',
     ]
 )
 def test_Model_crop_type_source_openet_crop_type(crop_type_source):
@@ -784,15 +798,17 @@ def test_Model_crop_type_source_openet_crop_type(crop_type_source):
     [
         ['USDA/NASS/CDL', TEST_POINT, 36],
         ['USDA/NASS/CDL/2016', TEST_POINT, 36],
-        ['projects/openet/crop_type/v2021a', TEST_POINT, 47],
-        ['projects/earthengine-legacy/assets/projects/openet/crop_type/v2021a', TEST_POINT, 47],
+        ['projects/openet/assets/crop_type/v2023a', TEST_POINT, 47],
+        ['projects/openet/assets/crop_type/v2021a', TEST_POINT, 47],
+        # ['projects/openet/crop_type/v2021a', TEST_POINT, 47],
+        # ['projects/earthengine-legacy/assets/projects/openet/crop_type/v2021a', TEST_POINT, 47],
     ]
 )
 def test_Model_crop_type_values(crop_type_source, xy, expected):
     output = utils.point_image_value(
         default_image_obj(crop_type_source=crop_type_source).crop_type, xy
     )
-    assert output == expected
+    assert output['crop_type'] == expected
 
 
 @pytest.mark.parametrize(
@@ -809,7 +825,7 @@ def test_Model_crop_mask_constant_value(crop_type_source, expected):
     output = utils.constant_image_value(
         default_image_obj(crop_type_source=crop_type_source).crop_mask
     )
-    assert output == expected
+    assert output['crop_mask'] == expected
 
 
 def test_Model_crop_pm_adjust_source_exception():
@@ -821,28 +837,29 @@ def test_Model_crop_pm_adjust_constant_value():
     output = utils.constant_image_value(
         default_image_obj(crop_pm_adjust_source=2, crop_type_source=36).crop_pm_adjust
     )
-    assert output == 2
+    assert output['crop_pm_adjust'] == 2
 
 
 @pytest.mark.parametrize(
     'crop_pm_adjust_source, xy, expected',
     [
-        ['projects/openet/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
+        ['projects/openet/assets/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
          TEST_POINT, 1.3024652077503645],
+        # ['projects/openet/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
+        #  TEST_POINT, 1.3024652077503645],
     ]
 )
 def test_Model_crop_pm_adjust_values(crop_pm_adjust_source, xy, expected, tol=0.001):
     output = utils.point_image_value(
         default_image_obj(crop_pm_adjust_source=crop_pm_adjust_source).crop_pm_adjust, xy
     )
-    assert abs(output - expected) <= tol
+    assert abs(output['crop_pm_adjust'] - expected) <= tol
 
 
 # def test_Model_crop_pm_adjust_band():
 #     output = utils.constant_image_value(default_image_obj(
-#         crop_pm_adjust_source=2,
-#         crop_type_source=36).crop_pm_adjust)
-#     assert output == 2
+#         crop_pm_adjust_source=2, crop_type_source=36).crop_pm_adjust)
+#     assert output['crop_pm_adjust'] == 2
 
 
 @pytest.mark.parametrize(
@@ -850,10 +867,14 @@ def test_Model_crop_pm_adjust_values(crop_pm_adjust_source, xy, expected, tol=0.
     [
         [True, 2, TEST_POINT, 2 * 6.128485756837151],
         [False, 2, TEST_POINT, 6.128485756837151],
-        [True, 'projects/openet/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
+        [True, 'projects/openet/assets/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
          TEST_POINT, 6.128485756837151 * 1.302],
-        [False, 'projects/openet/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
+        [False, 'projects/openet/assets/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
          TEST_POINT, 6.128485756837151],
+        # [True, 'projects/openet/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
+        #  TEST_POINT, 6.128485756837151 * 1.302],
+        # [False, 'projects/openet/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
+        #  TEST_POINT, 6.128485756837151],
     ]
 )
 def test_Model_et_crop_pm_adjust_flag(crop_pm_adjust_flag, crop_pm_adjust_source,
@@ -861,4 +882,4 @@ def test_Model_et_crop_pm_adjust_flag(crop_pm_adjust_flag, crop_pm_adjust_source
     output = utils.point_image_value(default_image_obj(
         crop_pm_adjust_flag=crop_pm_adjust_flag,
         crop_pm_adjust_source=crop_pm_adjust_source).et, xy)
-    assert abs(output - expected) <= tol
+    assert abs(output['et'] - expected) <= tol

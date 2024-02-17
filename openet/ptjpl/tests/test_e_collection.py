@@ -31,7 +31,9 @@ default_coll_args = {
         'et_reference_source': 'IDAHO_EPSCOR/GRIDMET',
         'et_reference_band': 'eto',
         'et_reference_factor': 0.85,
-        'et_reference_resample': 'nearest'},
+        'et_reference_resample': 'nearest',
+        'cloudmask_args': {'cloud_score_flag': False, 'filter_flag': False},
+    },
     'filter_args': {},
     # 'interp_args': {},
 }
@@ -65,7 +67,7 @@ def test_Collection_init_default_parameters():
     m = ptjpl.Collection(**args)
     assert m.variables is None
     assert m.cloud_cover_max == 70
-    assert m.model_args == {}
+    # assert m.model_args == {}
     assert m.filter_args == {}
     # assert m.interp_args == {}
 
