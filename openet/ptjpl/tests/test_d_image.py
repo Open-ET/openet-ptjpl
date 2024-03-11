@@ -169,8 +169,8 @@ def test_Image_init_default_parameters():
     assert m.rs_source == 'NLDAS'
     assert m.ta_source == 'NLDAS'
     assert m.windspeed_source == 'NLDAS'
-    assert m.topt_source == 'projects/openet/ptjpl/ancillary/Topt_from_max_convolved'
-    assert m.faparmax_source == 'projects/openet/ptjpl/ancillary/fAPARmax'
+    assert m.topt_source == 'projects/openet/assets/ptjpl/ancillary/Topt_from_max_convolved'
+    assert m.faparmax_source == 'projects/openet/assets/ptjpl/ancillary/fAPARmax'
     # assert m.et_reference_source is None
     # assert m.et_reference_band is None
     # assert m.et_reference_factor is None

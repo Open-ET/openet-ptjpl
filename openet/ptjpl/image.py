@@ -32,7 +32,7 @@ def lazy_property(fn):
 class Image:
     """Earth Engine based PT-JPL Image"""
 
-    _C2_LST_CORRECT = False  # Enable (True) C2 LST correction to recalculate LST
+    _C2_LST_CORRECT = True  # Enable (True) C2 LST correction to recalculate LST
 
     def __init__(
             self, image,
@@ -41,8 +41,8 @@ class Image:
             rs_source='NLDAS',
             LWin_source='NLDAS',
             ta_source='NLDAS',
-            topt_source='projects/openet/ptjpl/ancillary/Topt_from_max_convolved',
-            faparmax_source='projects/openet/ptjpl/ancillary/fAPARmax',
+            topt_source='projects/openet/assets/ptjpl/ancillary/Topt_from_max_convolved',
+            faparmax_source='projects/openet/assets/ptjpl/ancillary/fAPARmax',
             latitude=None,
             longitude=None,
             floor_Topt=True,
@@ -512,10 +512,7 @@ class Image:
             wind_v = self.nldas_interpolate('wind_v', self._date)
             windspeed_img = wind_u.expression(
                 "sqrt(wind_u ** 2 + wind_v ** 2)",
-                {
-                    "wind_u": wind_u,
-                    "wind_v": wind_v
-                }
+                {"wind_u": wind_u, "wind_v": wind_v}
             )
         else:
             raise ValueError(f'Invalid windspeed_source: {self.windspeed_source}\n')
@@ -962,7 +959,7 @@ class Image:
         if 'snow_flag' not in cloudmask_args.keys():
             cloudmask_args['snow_flag'] = True
         if 'cloud_score_flag' not in cloudmask_args.keys():
-            cloudmask_args['cloud_score_flag'] = True
+            cloudmask_args['cloud_score_flag'] = False
         if 'cloud_score_pct' not in cloudmask_args.keys():
             cloudmask_args['cloud_score_pct'] = 100
         if 'filter_flag' not in cloudmask_args.keys():
