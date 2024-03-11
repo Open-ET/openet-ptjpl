@@ -2,16 +2,16 @@
 name = "openet-ptjpl"
 version = "0.3.0"
 authors = [
-  { name = "Gregory Halverson", email = "Gregory.H.Halverson@jpl.nasa.gov" },
-  { name = "Josh Fisher", email = "joshbfisher@gmail.com" },
+    { name = "Gregory Halverson", email = "Gregory.H.Halverson@jpl.nasa.gov" },
+    { name = "Josh Fisher", email = "joshbfisher@gmail.com" },
 ]
- maintainers = [
-   { name = "Gregory Halverson", email = "Gregory.H.Halverson@jpl.nasa.gov" },
- ]
-description = "Earth Engine based PTJPL Model"
+maintainers = [
+    { name = "Gregory Halverson", email = "Gregory.H.Halverson@jpl.nasa.gov" },
+]
+description = "Earth Engine implementation of the PTJPL model"
 readme = "README.rst"
 requires-python = ">=3.8"
-keywords = ["PTJPL", "OpenET", "Earth Engine", "evapotranspiration"]
+keywords = ["PTJPL", "OpenET", "Earth Engine", "Evapotranspiration", "Landsat"]
 license = {file = "LICENSE"}
 # license = {text = "Apache-2.0"}
 classifiers = [
@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "earthengine-api>=0.1.367",
-    "openet-core>=0.2.0",
+    "openet-core>=0.4.0",
     # "openet-refet-gee>=0.2.0",
     "python-dateutil",
 ]
@@ -38,9 +38,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
-test = [
-    "pytest",
-]
+test = ["pytest"]
 
 [tool.setuptools.packages.find]
 # include = ["openet*"]

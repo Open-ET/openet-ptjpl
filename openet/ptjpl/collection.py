@@ -110,8 +110,7 @@ class Collection:
         # if et_reference_factor and not utils.is_number(et_reference_factor):
         #     raise ValueError('et_reference_factor must be a number')
         # if et_reference_factor and et_reference_factor < 0:
-        #     raise ValueError(
-        #         'et_reference_factor must be greater than zero')
+        #     raise ValueError('et_reference_factor must be greater than zero')
         # et_reference_resample_methods = ['nearest', 'bilinear', 'bicubic']
         # if (et_reference_resample and
         #         et_reference_resample.lower() not in et_reference_resample_methods):
@@ -356,7 +355,7 @@ class Collection:
             t_interval='custom',
             interp_method='linear',
             interp_days=32,
-            use_joins=False,
+            use_joins=True,
             **kwargs
             ):
         """
@@ -443,10 +442,25 @@ class Collection:
         interp_start_date = interp_start_dt.date().isoformat()
         interp_end_date = interp_end_dt.date().isoformat()
 
-        # Update model_args if reference ET parameters were passed to interpolate
-        # Intentionally using model_args (instead of self.et_reference_source, etc.) in
-        #   this function since model_args is passed to Image class in _build()
-        if 'et_reference' in variables or 'et_fraction' in variables:
+        # Get the interpolation collection
+        if 'interp_source' not in kwargs.keys():
+            raise ValueError('interp_source was not set')
+        if 'interp_band' not in kwargs.keys():
+            raise ValueError('interp_band was not set')
+        if 'interp_factor' in kwargs.keys() and kwargs['interp_factor'] != 1:
+            raise ValueError('interp_factor is not currently support or applied')
+
+        if 'interp_resample' in kwargs.keys():
+            interp_resample = kwargs['interp_resample'].lower()
+        else:
+            interp_resample = 'nearest'
+        if interp_resample and (interp_resample not in ['bilinear', 'bicubic', 'nearest']):
+            raise ValueError(f'unsupported interp_resample: {interp_resample}')
+
+        # Update self.model_args if reference ET parameters were passed to interpolate
+        # Intentionally using self.model_args (instead of self.et_reference_source, etc.) in
+        #   this function since self.model_args is passed to Image class in _build()
+        if ('et_reference' in variables) or ('et_fraction' in variables):
             if ('et_reference_source' in kwargs.keys() and
                     kwargs['et_reference_source'] is not None):
                 self.model_args['et_reference_source'] = kwargs['et_reference_source']
@@ -456,11 +470,11 @@ class Collection:
             if ('et_reference_factor' in kwargs.keys() and
                     kwargs['et_reference_factor'] is not None):
                 self.model_args['et_reference_factor'] = kwargs['et_reference_factor']
-                self.model_args['et_reference_band'] = kwargs['et_reference_band']
-            # CGM - Resampling is not working correctly so commenting out for now
-            # if ('et_reference_resample' in kwargs.keys() and
-            #         kwargs['et_reference_resample'] is not None):
-            #     self.model_args['et_reference_resample'] = kwargs['et_reference_resample']
+            if ('et_reference_resample' in kwargs.keys() and
+                    kwargs['et_reference_resample'] is not None):
+                self.model_args['et_reference_resample'] = kwargs['et_reference_resample']
+            else:
+                self.model_args['et_reference_resample'] = 'nearest'
 
             # Check that all reference ET parameters were set
             for et_reference_param in ['et_reference_source', 'et_reference_band',
@@ -468,6 +482,9 @@ class Collection:
                 if (et_reference_param not in self.model_args.keys() or
                         not self.model_args[et_reference_param]):
                     raise ValueError(f'{et_reference_param} was not set')
+
+            if self.model_args['et_reference_resample'] not in ['bilinear', 'bicubic', 'nearest']:
+                raise ValueError(f'unsupported interp_resample: {interp_resample}')
 
             if type(self.model_args['et_reference_source']) is str:
                 # Assume a string source is a single image collection ID
@@ -491,26 +508,14 @@ class Collection:
                 )
 
             # Scale reference ET images (if necessary)
-            # CGM - Resampling is not working correctly so not including for now
-            if (self.model_args['et_reference_factor'] and
-                    self.model_args['et_reference_factor'] != 1):
+            if ((self.model_args['et_reference_factor']) and
+                    (self.model_args['et_reference_factor'] != 1)):
                 def et_reference_adjust(input_img):
                     return (
                         input_img.multiply(self.model_args['et_reference_factor'])
                         .set({'system:time_start': input_img.get('system:time_start')})
                     )
                 daily_et_ref_coll = daily_et_ref_coll.map(et_reference_adjust)
-
-        # Get the interpolation collection
-        # TODO: Add logic to try falling back on et_reference parameters
-        #   in model_args (if they are available)
-        if 'interp_source' not in kwargs.keys():
-            raise ValueError('interp_source was not set')
-        if 'interp_band' not in kwargs.keys():
-            raise ValueError('interp_band was not set')
-        # CGM - Resampling is not working correctly so commenting out for now
-        # if 'interp_resample' not in kwargs.keys():
-        #     raise ValueError('interp_resample was not set')
 
         # Target collection needs to be filtered to the same date range as the
         #   scene collection in order to normalize the scenes.
@@ -544,7 +549,9 @@ class Collection:
 
         # Build initial scene image collection
         scene_coll = self._build(
-            variables=interp_vars, start_date=interp_start_date, end_date=interp_end_date,
+            variables=interp_vars,
+            start_date=interp_start_date,
+            end_date=interp_end_date,
         )
 
         # For count, compute the composite/mosaic image for the mask band only
@@ -571,17 +578,31 @@ class Collection:
         if 'mask' in interp_vars:
             interp_vars.remove('mask')
 
-        # CGM - It might be more efficient to join the target collection to the scenes
-        def normalize_et(img):
-            img_date = ee.Date(img.get('system:time_start')).update(hour=0, minute=0, second=0)
-            img_date = ee.Date(img_date.millis().divide(1000).floor().multiply(1000))
-            target_img = ee.Image(
-                daily_target_coll.filterDate(img_date, img_date.advance(1, 'day')).first()
-            )
+        # Switched the approach for building the normalized ET scene collection to
+        #   joining the target collection to the scene collection so that scenes that
+        #   occur on a day with no target image (likely DisALEXI) will get dropped.
+        # Filtering to the previous day before the scene image should be equivalent
+        #   to joining on the 0 UTC date.
+        # The original filtering in the mapped function code is commented out below
+        prev_day_filter = ee.Filter.And(
+            ee.Filter.maxDifference(
+                difference=1 * 24 * 60 * 60 * 1000,
+                leftField='system:time_start', rightField='system:time_start'),
+            ee.Filter.greaterThan(leftField='system:time_start', rightField='system:time_start')
+        )
+        scene_coll = ee.ImageCollection(
+            ee.Join.saveFirst(matchKey='target_img', ordering='system:time_start', ascending=False)
+            .apply(primary=scene_coll.filterDate(interp_start_date, interp_end_date),
+                   secondary=daily_target_coll,
+                   condition=prev_day_filter)
+        )
 
-            # CGM - Resampling isn't working correctly, commenting out for now
-            # if kwargs['interp_resample'].lower() in ['bilinear', 'bicubic']:
-            #     target_img = target_img.resample(kwargs['interp_resample'])
+        def normalize_et(img):
+            target_img = ee.Image(img.get('target_img'))
+
+            # CGM - Resampling in this function caused weird artifacts in the output images
+            if interp_resample and (interp_resample in ['bilinear', 'bicubic']):
+                target_img = target_img.resample(interp_resample)
 
             et_norm_img = img.select(['et']).divide(target_img).rename(['et_norm'])
 
@@ -594,15 +615,12 @@ class Collection:
             #     'et_fraction_max' in kwargs.keys()):
             #     et_norm_img = et_norm_img.clamp(
             #         float(kwargs['et_fraction_min']),
-            #         float(kwargs['et_fraction_max']))
+            #         float(kwargs['et_fraction_max'])
+            #     )
 
             return img.addBands([et_norm_img.double(), target_img.rename(['norm'])])
 
-        # The time band is always needed for interpolation
-        scene_coll = scene_coll \
-            .filterDate(interp_start_date, interp_end_date) \
-            .select(['et'] + ['time']) \
-            .map(normalize_et)
+        scene_coll = scene_coll.select(interp_vars).map(normalize_et)
 
         # Interpolate to a daily time step
         daily_coll = interpolate.daily(
@@ -612,9 +630,24 @@ class Collection:
             interp_days=interp_days,
             use_joins=use_joins,
             compute_product=True,
+            resample_method=interp_resample,
         )
-        # pprint.pprint(daily_coll.first().getInfo())
+
+        # The interpolate.daily() function is currently returning the product of
+        # the source and target image named as "{source_band}_1".
+        # This approach will not be valid if other bands are interpolated.
         daily_coll = daily_coll.select(['et_norm_1'], ['et'])
+
+        # Convert normalized ET back to ET
+        # This isn't needed if compute_product=True in daily() and band is renamed
+        # The check for et_fraction is needed since it is back computed from ET and ETr
+        # # if 'et' in variables or 'et_fraction' in variables:
+        # def compute_et(img):
+        #     """This function assumes ETr and ETf are present"""
+        #     et_img = img.select(['et_norm']).multiply(
+        #         img.select(['et_reference']))
+        #     return img.addBands(et_img.double().rename('et'))
+        # daily_coll = daily_coll.map(compute_et)
 
         interp_properties = {
             'cloud_cover_max': self.cloud_cover_max,
@@ -623,8 +656,6 @@ class Collection:
             'interp_method': interp_method,
             'model_name': metadata.metadata('openet-ptjpl')['Name'],
             'model_version': metadata.metadata('openet-ptjpl')['Version'],
-            # 'model_name': openet.ptjpl.MODEL_NAME,
-            # 'model_version': openet.ptjpl.__version__,
         }
         interp_properties.update(self.model_args)
 
@@ -650,16 +681,29 @@ class Collection:
             for each time interval by separate mappable functions
 
             """
-            # if 'et' in variables or 'et_fraction' in variables:
-            et_img = daily_coll.filterDate(agg_start_date, agg_end_date).select(['et']).sum()
+            if ('et' in variables) or ('et_fraction' in variables):
+                et_img = (
+                    daily_coll
+                    .filterDate(agg_start_date, agg_end_date)
+                    .select(['et'])
+                    .sum()
+                )
 
-            if 'et_reference' in variables or 'et_fraction' in variables:
-                # Get reference ET from the original collection instead of from
-                #   the interpolated daily collection.
-                #   (this is different than the et_fraction models)
-                et_reference_img = daily_et_ref_coll\
-                    .filterDate(agg_start_date, agg_end_date) \
-                    .select(['et_reference']).sum()
+            if ('et_reference' in variables) or ('et_fraction' in variables):
+                # Get the reference ET image from the reference ET collection,
+                #   not the interpolated collection
+                et_reference_img = (
+                    daily_et_ref_coll
+                    .filterDate(agg_start_date, agg_end_date)
+                    .sum()
+                )
+                if (self.model_args['et_reference_resample'] and
+                        (self.model_args['et_reference_resample'] in ['bilinear', 'bicubic'])):
+                    et_reference_img = (
+                        et_reference_img
+                        .setDefaultProjection(daily_et_ref_coll.first().projection())
+                        .resample(self.model_args['et_reference_resample'])
+                    )
 
             image_list = []
             if 'et' in variables:
@@ -667,8 +711,9 @@ class Collection:
             if 'et_reference' in variables:
                 image_list.append(et_reference_img.float())
             if 'et_fraction' in variables:
-                etf_img = et_img.divide(et_reference_img).rename(['et_fraction'])
-                image_list.append(etf_img.float())
+                image_list.append(
+                    et_img.divide(et_reference_img).rename(['et_fraction']).float()
+                )
             if 'ndvi' in variables:
                 ndvi_img = (
                     daily_coll.filterDate(agg_start_date, agg_end_date)
@@ -745,7 +790,9 @@ class Collection:
         elif t_interval.lower() == 'custom':
             # Returning an ImageCollection to be consistent
             return ee.ImageCollection(aggregate_image(
-                agg_start_date=start_date, agg_end_date=end_date, date_format='YYYYMMdd',
+                agg_start_date=start_date,
+                agg_end_date=end_date,
+                date_format='YYYYMMdd',
             ))
 
     def get_image_ids(self):
