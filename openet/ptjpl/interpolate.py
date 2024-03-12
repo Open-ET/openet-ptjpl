@@ -256,16 +256,12 @@ def from_scene_et_fraction(
             img.select(interp_vars).double().multiply(ee.Number(img.get('scale_factor')))
             .addBands([mask_img, time_img])
             .set({'system:time_start': ee.Number(img.get('system:time_start'))})
+            # .set({'image_id': ee.String(img.get('system:index'))})
         )
-        #     .set({'image_id': ee.String(img.get('system:index'))})
 
     # Filter scene collection to the interpolation range
     # This may not be needed since scene_coll was built to this range
-    scene_coll = (
-        scene_coll
-        .filterDate(interp_start_date, interp_end_date)
-        .map(interpolate_prep)
-    )
+    scene_coll = scene_coll.filterDate(interp_start_date, interp_end_date).map(interpolate_prep)
 
     # For count, compute the composite/mosaic image for the mask band only
     if 'count' in variables:
@@ -343,20 +339,11 @@ def from_scene_et_fraction(
 
         """
         if ('et' in variables) or ('et_fraction' in variables):
-            et_img = (
-                daily_coll
-                .filterDate(agg_start_date, agg_end_date)
-                .select(['et'])
-                .sum()
-            )
+            et_img = daily_coll.filterDate(agg_start_date, agg_end_date).select(['et']).sum()
 
         if ('et_reference' in variables) or ('et_fraction' in variables):
-            et_reference_img = (
-                daily_et_ref_coll
-                .filterDate(agg_start_date, agg_end_date)
-                .select(['et_reference'])
-                .sum()
-            )
+            et_reference_img = daily_et_ref_coll.filterDate(agg_start_date, agg_end_date).sum()
+
             if et_reference_resample and (et_reference_resample in ['bilinear', 'bicubic']):
                 et_reference_img = (
                     et_reference_img
@@ -371,9 +358,7 @@ def from_scene_et_fraction(
             image_list.append(et_reference_img.float())
         if 'et_fraction' in variables:
             # Compute average et fraction over the aggregation period
-            image_list.append(
-                et_img.divide(et_reference_img).rename(['et_fraction']).float()
-            )
+            image_list.append(et_img.divide(et_reference_img).rename(['et_fraction']).float())
         if 'ndvi' in variables:
             # Compute average ndvi over the aggregation period
             ndvi_img = (
@@ -624,15 +609,13 @@ def from_scene_et_actual(
 
         # Assume a string source is a single image collection ID
         #   not a list of collection IDs or ee.ImageCollection
-        daily_et_ref_coll_id = model_args['et_reference_source']
         daily_et_ref_coll = (
-            ee.ImageCollection(daily_et_ref_coll_id)
+            ee.ImageCollection(model_args['et_reference_source'])
             .filterDate(start_date, end_date)
             .select([model_args['et_reference_band']], ['et_reference'])
         )
 
         # Scale reference ET images (if necessary)
-        # CGM - Resampling is not working correctly so not including for now
         if et_reference_factor and (et_reference_factor != 1):
             def et_reference_adjust(input_img):
                 return (
@@ -641,7 +624,6 @@ def from_scene_et_actual(
                     .set({'system:time_start': input_img.get('system:time_start')})
                 )
             daily_et_ref_coll = daily_et_ref_coll.map(et_reference_adjust)
-
 
     # Target collection needs to be filtered to the same date range as the
     #   scene collection in order to normalize the scenes.
@@ -766,21 +748,12 @@ def from_scene_et_actual(
 
         """
         if ('et' in variables) or ('et_fraction' in variables):
-            et_img = (
-                daily_coll
-                .filterDate(agg_start_date, agg_end_date)
-                .select(['et'])
-                .sum()
-            )
+            et_img = daily_coll.filterDate(agg_start_date, agg_end_date).select(['et']).sum()
 
         if ('et_reference' in variables) or ('et_fraction' in variables):
             # Get the reference ET image from the reference ET collection,
             #   not the interpolated collection
-            et_reference_img = (
-                daily_et_ref_coll
-                .filterDate(agg_start_date, agg_end_date)
-                .sum()
-            )
+            et_reference_img = daily_et_ref_coll.filterDate(agg_start_date, agg_end_date).sum()
             if et_reference_resample and (et_reference_resample in ['bilinear', 'bicubic']):
                 et_reference_img = (
                     et_reference_img
@@ -795,9 +768,7 @@ def from_scene_et_actual(
             image_list.append(et_reference_img.float())
         if 'et_fraction' in variables:
             # Compute average et fraction over the aggregation period
-            image_list.append(
-                et_img.divide(et_reference_img).rename(['et_fraction']).float()
-            )
+            image_list.append(et_img.divide(et_reference_img).rename(['et_fraction']).float())
         # if 'ndvi' in variables:
         #     # Compute average ndvi over the aggregation period
         #     ndvi_img = (
