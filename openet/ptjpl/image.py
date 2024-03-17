@@ -959,11 +959,11 @@ class Image:
         if 'snow_flag' not in cloudmask_args.keys():
             cloudmask_args['snow_flag'] = True
         if 'cloud_score_flag' not in cloudmask_args.keys():
-            cloudmask_args['cloud_score_flag'] = False
+            cloudmask_args['cloud_score_flag'] = True
         if 'cloud_score_pct' not in cloudmask_args.keys():
             cloudmask_args['cloud_score_pct'] = 100
         if 'filter_flag' not in cloudmask_args.keys():
-            cloudmask_args['filter_flag'] = False
+            cloudmask_args['filter_flag'] = True
         # QA_RADSAT band will need to be added above if applying saturated masking
         # if 'saturated_flag' not in cloudmask_args.keys():
         #     cloudmask_args['saturated_flag'] = False

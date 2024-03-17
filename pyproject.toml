@@ -1,6 +1,6 @@
 [project]
 name = "openet-ptjpl"
-version = "0.3.0"
+version = "0.3.1"
 authors = [
     { name = "Gregory Halverson", email = "Gregory.H.Halverson@jpl.nasa.gov" },
     { name = "Josh Fisher", email = "joshbfisher@gmail.com" },
@@ -20,9 +20,9 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "earthengine-api>=0.1.367",
-    "openet-core>=0.4.0",
-    # "openet-refet-gee>=0.2.0",
+    "earthengine-api >= 0.1.367",
+    "openet-core >= 0.4.0",
+    # "openet-refet-gee >= 0.2.0",
     "python-dateutil",
 ]
 
