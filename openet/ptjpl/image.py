@@ -652,10 +652,7 @@ class Image:
         if self.crop_pm_adjust_flag:
             et_img = et_img.multiply(self.crop_pm_adjust)
 
-        return et_img
-
-        # return ptjpl.ET(self.LEd, self.daylight_hours) \
-        #     .rename(['ET']).set(self._properties)
+        return et_img.rename(['ET']).set(self._properties)
 
     @lazy_property
     def ESI(self):

@@ -237,19 +237,46 @@ def lst(landsat_image):
     return lst.rename(['lst'])
 
 
+def normalized_difference(image, b1_name, b2_name):
+    """Generic normalized difference index function to handle negative reflectance values"""
+
+    # Force the input values to be at greater than or equal to zero
+    #   since C02 surface reflectance values can be negative
+    #   but the normalizedDifference function will return nodata
+    ndi = (
+        image.select([b1_name, b2_name]).max(0)
+        .normalizedDifference([b1_name, b2_name])
+    )
+
+    # # Keep the computed NDVI if one of the reflectance values is < 0 but the other is >> 0
+    # # Otherwise assume the reflectance values are too low to be "valid" and set the NDVI to 0
+    # b1 = image.select([b1_name])
+    # b2 = image.select([b2_name])
+    # ndi = ndi.where(b1.lt(0.01).And(b2.lt(0.01)), 0)
+    # ndi = ndi.where(b1.lt(0).And(b2.lt(0.01)), 0)
+    # ndi = ndi.where(b1.lt(0.01).And(b2.lt(0)), 0)
+    # ndi = ndi.where(b1.lt(0).And(b2.lt(0)), 0)
+
+    return ndi.rename('ndi')
+    # return landsat_image.normalizedDifference([b1_name, b2_name]).rename(['ndvi'])
+
+
 def ndvi(landsat_image):
     """Normalized Difference Vegetation Index (NDVI)"""
-    return ee.Image(landsat_image).normalizedDifference(['nir', 'red']).rename(['ndvi'])
+    return normalized_difference(landsat_image, 'nir', 'red').rename(['ndvi'])
+    # return ee.Image(landsat_image).normalizedDifference(['nir', 'red']).rename(['ndvi'])
 
 
 def ndwi(landsat_image):
     """Normalized Difference Water Index (NDWI)"""
-    return ee.Image(landsat_image).normalizedDifference(['green', 'nir']).rename(['ndwi'])
+    return normalized_difference(landsat_image, 'green', 'nir').rename(['ndwi'])
+    # return ee.Image(landsat_image).normalizedDifference(['green', 'nir']).rename(['ndwi'])
 
 
 def mndwi(landsat_image):
     """Modified Normalized Difference Water Index (MNDWI)"""
-    return ee.Image(landsat_image).normalizedDifference(['green', 'swir2']).rename(['mndwi'])
+    return normalized_difference(landsat_image, 'green', 'swir2').rename(['mndwi'])
+    # return ee.Image(landsat_image).normalizedDifference(['green', 'swir2']).rename(['mndwi'])
 
 
 def wri(landsat_image):

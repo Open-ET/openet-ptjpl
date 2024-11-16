@@ -30,13 +30,6 @@ def sr_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2, bt=300
     )
 
 
-# Test the static methods of the class first
-# Do these need to be inside the TestClass?
-def test_Image_ndvi_band_name():
-    output = landsat.ndvi(sr_image()).getInfo()['bands'][0]['id']
-    assert output == 'ndvi'
-
-
 @pytest.mark.parametrize(
     'red, nir, expected',
     [
@@ -50,9 +43,32 @@ def test_Image_ndvi_band_name():
         [0.2, 0.8, 0.6],
         [0.1, 17.0 / 30, 0.7],
         [0.2, 0.7, 0.55555555],
+        # Check that negative values are not masked
+        [-0.01, 0.1, 1.0],
+        [0.1, -0.01, -1.0],
+        # # Check extreme values
+        # [-0.01, -0.01, 0.0],
+        # [-0.01, 0.0, 0.0],
+        # [0.0, -0.01, 0.0],
+        # [1.5, 0.5, -0.5],
+        # [0.5, 1.5, 0.5],
     ]
 )
-def test_Image_ndvi_calculation(red, nir, expected, tol=0.000001):
+def test_Image_normalized_difference_calculation(red, nir, expected, tol=0.000001):
+    output = utils.constant_image_value(landsat.normalized_difference(
+        sr_image(red=red, nir=nir), 'nir', 'red'
+    ))
+    assert abs(output['ndi'] - expected) <= tol
+
+
+# Test the static methods of the class first
+# Do these need to be inside the TestClass?
+def test_Image_ndvi_band_name():
+    output = landsat.ndvi(sr_image()).getInfo()['bands'][0]['id']
+    assert output == 'ndvi'
+
+
+def test_Image_ndvi_calculation(red=0.3, nir=0.4, expected=0.7, tol=0.000001):
     output = utils.constant_image_value(landsat.ndvi(sr_image(red=red, nir=nir)))
     assert abs(output['ndvi'] - expected) <= tol
 
