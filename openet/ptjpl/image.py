@@ -382,6 +382,8 @@ class Image:
     def water_mask(self):
         """Water pixel identification"""
         # TODO: Incorporate QA_PIXEL water mask and check albedo threshold
+        # The albedo threshold is being used to catch saturated pixels
+        #   but could be replaced with the QA_RADSAT band instead
         return (
             self.NDWI.gte(0)
             .And(self.MNDWI.gte(0))

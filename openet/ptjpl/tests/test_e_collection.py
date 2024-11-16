@@ -69,8 +69,8 @@ def test_Collection_init_default_parameters():
     m = ptjpl.Collection(**args)
     assert m.variables is None
     assert m.cloud_cover_max == 70
-    # assert m.model_args == {}
     assert m.filter_args == {}
+    # assert m.model_args == {}
     # assert m.interp_args == {}
 
 
@@ -175,8 +175,7 @@ def test_Collection_build_default():
 
 def test_Collection_build_variables_custom(variable='ndvi'):
     # Check that setting the build variables overrides the collection variables
-    output = utils.getinfo(default_coll_obj()._build(variables=[variable])
-                           .first().bandNames())
+    output = utils.getinfo(default_coll_obj()._build(variables=[variable]).first().bandNames())
     assert set(output) == {variable}
 
 
@@ -373,7 +372,7 @@ def test_Collection_interpolate_use_joins(use_joins):
     assert parse_scene_id(output) == ['20170701']
 
 
-def test_Collection_interpolate_variables_custom():
+def test_Collection_interpolate_variables_custom_et():
     output = utils.getinfo(default_coll_obj().interpolate(variables=['et'], **interp_args))
     assert {y['id'] for x in output['features'] for y in x['bands']} == {'et'}
 
@@ -399,26 +398,12 @@ def test_Collection_interpolate_t_interval_monthly():
     assert {y['id'] for x in output['features'] for y in x['bands']} == VARIABLES
 
 
-# CGM - Commenting out since it takes a really long time to run
-# def test_Collection_interpolate_t_interval_annual():
-#     """Test if the annual time interval parameter works"""
-#     coll_obj = default_coll_obj(start_date='2017-01-01', end_date='2018-01-01')
-#     output = utils.getinfo(coll_obj.interpolate(
-#         t_interval='annual', **interp_args))
-#     assert output['type'] == 'ImageCollection'
-#     assert parse_scene_id(output) == ['2017']
-#     assert {y['id'] for x in output['features'] for y in x['bands']} == VARIABLES
-
-
 def test_Collection_interpolate_t_interval_custom():
     """Test if the custom time interval parameter works"""
     output = utils.getinfo(default_coll_obj().interpolate(t_interval='custom', **interp_args))
     assert output['type'] == 'ImageCollection'
     assert parse_scene_id(output) == ['20170701']
     assert {y['id'] for x in output['features'] for y in x['bands']} == VARIABLES
-
-
-# TODO: Write test for annual interpolation with a date range that is too short
 
 
 # def test_Collection_interpolate_interp_days():
