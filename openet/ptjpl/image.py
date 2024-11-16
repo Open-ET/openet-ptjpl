@@ -381,11 +381,13 @@ class Image:
     @lazy_property
     def water_mask(self):
         """Water pixel identification"""
+        # TODO: Incorporate QA_PIXEL water mask and check albedo threshold
         return (
-            self.NDWI.gt(0)
-            .And(self.MNDWI.gt(0))
+            self.NDWI.gte(0)
+            .And(self.MNDWI.gte(0))
             .And(self.WRI.gt(1))
-            .And(self.NDVI.lt(0))
+            .And(self.NDVI.lte(0))
+            .And(self.albedo.lt(0.3))
             .rename(['water_mask']).set(self._properties)
         )
 

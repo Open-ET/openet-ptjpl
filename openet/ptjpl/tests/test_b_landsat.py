@@ -46,12 +46,14 @@ def sr_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2, bt=300
         # Check that negative values are not masked
         [-0.01, 0.1, 1.0],
         [0.1, -0.01, -1.0],
-        # # Check extreme values
-        # [-0.01, -0.01, 0.0],
-        # [-0.01, 0.0, 0.0],
-        # [0.0, -0.01, 0.0],
-        # [1.5, 0.5, -0.5],
-        # [0.5, 1.5, 0.5],
+        # Check that low values are set to 0
+        [-0.1, -0.1, 0.0],
+        [0.0, 0.0, 0.0],
+        [0.009, 0.009, 0.0],
+        [0.009, -0.01, 0.0],
+        [-0.01, 0.009, 0.0],
+        # Don't adjust NDVI if only one reflectance value is low
+        [0.005, 0.1, 0.9047619104385376],
     ]
 )
 def test_Image_normalized_difference_calculation(red, nir, expected, tol=0.000001):
@@ -68,7 +70,7 @@ def test_Image_ndvi_band_name():
     assert output == 'ndvi'
 
 
-def test_Image_ndvi_calculation(red=0.3, nir=0.4, expected=0.7, tol=0.000001):
+def test_Image_ndvi_calculation(red=0.3, nir=0.7, expected=0.4, tol=0.000001):
     output = utils.constant_image_value(landsat.ndvi(sr_image(red=red, nir=nir)))
     assert abs(output['ndvi'] - expected) <= tol
 
