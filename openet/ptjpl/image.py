@@ -37,18 +37,18 @@ class Image:
     def __init__(
             self,
             image,
-            windspeed_source='NLDAS',
+            ta_source='NLDAS',
             ea_source='NLDAS',
+            windspeed_source='NLDAS',
             rs_source='NLDAS',
             LWin_source='NLDAS',
-            ta_source='NLDAS',
             topt_source='projects/openet/assets/ptjpl/ancillary/Topt_from_max_convolved',
             faparmax_source='projects/openet/assets/ptjpl/ancillary/fAPARmax',
             latitude=None,
             longitude=None,
             floor_Topt=True,
             **kwargs
-    ):
+            ):
         """Construct a generic PT-JPL Image
 
         Parameters
@@ -57,13 +57,16 @@ class Image:
             A "prepped" PT-JPL input image.
             Bands: 'albedo', 'emissivity', 'ndvi', 'lst', 'water_mask'.
             Properties: 'system:index', 'system:time_start'.
-        ea_source : {'NLDAS'}, optional
-            Actual vapor pressure source keyword (the default is 'NLDAS').
-        rs_source : {'NLDAS'}, optional
-            Incoming shortwave solar radiation source keyword
-            (the default is 'NLDAS').
-        ta_source : {'NLDAS'}, optional
+        ta_source : {'ERA5LAND', 'NLDAS', 'RTMA'}, optional
             Air temperature source keyword (the default is 'NLDAS').
+        ea_source : {'ERA5LAND', 'NLDAS', 'RTMA'}, optional
+            Actual vapor pressure source keyword (the default is 'NLDAS').
+        windspeed_source : {'ERA5LAND', 'NLDAS', 'RTMA'}, optional
+            Wind speed source keyword (the default is 'NLDAS').
+        rs_source : {'ERA5LAND', 'NLDAS'}, optional
+            Incoming shortwave solar radiation source keyword (the default is 'NLDAS').
+        LWin_source : {'ERA5LAND', 'NLDAS'}, optional
+            Incoming longwave solar radiation source keyword (the default is 'NLDAS').
         topt_source : str, optional
             Optimal temperature source.
         faparmax_source : str, optional
@@ -75,7 +78,8 @@ class Image:
             Longitude [deg].  If not set will default to ee.Image.pixelLonLat()
             mapped to the input image.
         floor_Topt : bool, optional
-            ? (the default is True).
+            Force Topt values to be greater than or equal the air temperature
+            (the default is True).
         kwargs : dict, optional
             et_reference_source : str, float
                 Reference ET source (the default is None).
@@ -369,24 +373,6 @@ class Image:
         """Normalized difference vegetation index (NDVI)"""
         return self.image.select(['ndvi']).set(self._properties)
 
-    # Deprecated - Water mask is being generated inside landsat model
-    # @lazy_property
-    # def NDWI(self):
-    #     """Normalized Difference Water Index (NDWI)"""
-    #     return self.image.select(['ndwi']).set(self._properties)
-
-    # Deprecated - Water mask is being generated inside landsat model
-    # @lazy_property
-    # def MNDWI(self):
-    #     """Modified Normalized Difference Water Index (NDWI)"""
-    #     return self.image.select(['mndwi']).set(self._properties)
-
-    # Deprecated - Water mask is being generated inside landsat model
-    # @lazy_property
-    # def WRI(self):
-    #     """Water Ratio Index (WRI)"""
-    #     return self.image.select(['wri']).set(self._properties)
-
     @lazy_property
     def water_mask(self):
         """Water pixel identification"""
@@ -449,15 +435,23 @@ class Image:
 
         """
         if utils.is_number(self.LWin_source):
-            LWin = ee.Image.constant(float(self.LWin_source))
+            lwin_img = ee.Image.constant(float(self.LWin_source))
         elif isinstance(self.LWin_source, ee.computedobject.ComputedObject):
-            LWin = ee.Image(self.LWin_source)
-        elif self.LWin_source.upper() == 'NLDAS':
-            LWin = self.nldas_interpolate('longwave_radiation', self._date)
+            lwin_img = ee.Image(self.LWin_source)
+        elif self.LWin_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+            lwin_img = self.hourly_source_interpolate(
+                'ECMWF/ERA5_LAND/HOURLY', 'surface_thermal_radiation_downwards_hourly', self._date
+            )
+            # Convert J m-2 to W m-2 hr-1
+            lwin_img = lwin_img.divide(3600)
+        elif self.LWin_source.upper() in ['NLDAS', 'NLDAS2']:
+            lwin_img = self.hourly_source_interpolate(
+                'NASA/NLDAS/FORA0125_H002', 'longwave_radiation', self._date
+            )
         else:
             raise ValueError(f'Unsupported LWin source: {self.LWin_source}\n')
 
-        return LWin.rename(['LWin']).resample(DOWNSAMPLE_METHOD)
+        return self.LST.multiply(0).add(lwin_img.resample(DOWNSAMPLE_METHOD)).rename(['LWin'])
 
     @lazy_property
     def LWout(self):
@@ -495,34 +489,25 @@ class Image:
     def U(self):
         """Windspeed"""
         if utils.is_number(self.windspeed_source):
-            windspeed_img = ee.Image.constant(float(self.windspeed_source))
+            wind_img = ee.Image.constant(float(self.windspeed_source))
         elif isinstance(self.windspeed_source, ee.computedobject.ComputedObject):
-            windspeed_img = self.windspeed_source
-        # elif self.windspeed_source.upper() == 'CFSV2':
-        #     # It would be more correct to compute the magnitude for each image,
-        #     #   then compute the average.
-        #     # Do we need daily, 6hr, or interpolated instantaneous data?
-        #     windspeed_coll = ee.ImageCollection('NOAA/CFSV2/FOR6H') \
-        #         .select([
-        #         'u-component_of_wind_height_above_ground',
-        #         'v-component_of_wind_height_above_ground']) \
-        #         .filterDate(self._date, self._date.advance(1, 'day'))
-        #     windspeed_img = windspeed_coll.mean() \
-        #         .expression('sqrt(b(0) ** 2 + b(1) ** 2)')
-        elif self.windspeed_source.upper() == 'NLDAS':
-            wind_u = self.nldas_interpolate('wind_u', self._date)
-            wind_v = self.nldas_interpolate('wind_v', self._date)
-            windspeed_img = wind_u.expression(
-                "sqrt(wind_u ** 2 + wind_v ** 2)",
-                {"wind_u": wind_u, "wind_v": wind_v}
-            )
+            wind_img = self.windspeed_source
+        elif self.windspeed_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+            wind_coll_id = 'ECMWF/ERA5_LAND/HOURLY'
+            wind_u = self.hourly_source_interpolate(wind_coll_id, 'u_component_of_wind_10m', self._date)
+            wind_v = self.hourly_source_interpolate(wind_coll_id, 'v_component_of_wind_10m', self._date)
+            wind_img = wind_u.pow(2).add(wind_v.pow(2)).sqrt()
+        elif self.windspeed_source.upper() in ['NLDAS', 'NLDAS2']:
+            wind_coll_id = 'NASA/NLDAS/FORA0125_H002'
+            wind_u = self.hourly_source_interpolate(wind_coll_id, 'wind_u', self._date)
+            wind_v = self.hourly_source_interpolate(wind_coll_id, 'wind_v', self._date)
+            wind_img = wind_u.pow(2).add(wind_v.pow(2)).sqrt()
+        elif self.windspeed_source.upper() == 'RTMA':
+            wind_img = self.hourly_source_interpolate('NOAA/NWS/RTMA', 'WIND', self._date)
         else:
             raise ValueError(f'Invalid windspeed_source: {self.windspeed_source}\n')
 
-        windspeed_img = windspeed_img.resample(DOWNSAMPLE_METHOD)
-        windspeed_img = self.LST.multiply(0).add(windspeed_img)
-
-        return windspeed_img.rename(['U']).set(self._properties)
+        return self.LST.multiply(0).add(wind_img.resample(DOWNSAMPLE_METHOD)).rename(['U'])
 
     @lazy_property
     def SVP_kPa(self):
@@ -674,30 +659,45 @@ class Image:
         ValueError
             If `self.ea_source` is not supported.
 
+        Notes
+        -----
+        Using pressure component directly for NLDAS and RTMA instead of computing from elevation
+        pair_img = (
+            ee.Image('USGS/SRTMGL1_003').multiply(-0.0065).add(293.0).divide(293.0)
+            .pow(5.26).multiply(101.3).multiply(1000)
+        )
+
         """
         if utils.is_number(self.ea_source):
             ea_img = ee.Image.constant(float(self.ea_source))
         elif isinstance(self.ea_source, ee.computedobject.ComputedObject):
             ea_img = ee.Image(self.ea_source)
-        elif self.ea_source.upper() == 'NLDAS':
-            sph_img = self.nldas_interpolate('specific_humidity', self._date)
-
-            # We could get pressure from NLDAS or compute from elevation?
-            # NLDAS pressure is in Pa
-            pair_img = self.nldas_interpolate('pressure', self._date)
-
-            # # Elevation could be made into a class property
-            # elev_img = ee.Image('USGS/SRTMGL1_003')
-            # pair_img = elev_img.multiply(-0.0065).add(293.0).divide(293.0) \
-            #     .pow(5.26).multiply(101.3).multiply(1000)
-
-            # Compute Ea from sph (and pair) and convert kPa to Pa
-            ea_img = sph_img.multiply(0.378).add(0.622).pow(-1) \
-                .multiply(sph_img).multiply(pair_img)
+        elif self.ea_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+            ea_coll_id = 'ECMWF/ERA5_LAND/HOURLY'
+            tdew_img = (
+                self.hourly_source_interpolate(ea_coll_id, 'dewpoint_temperature_2m', self._date)
+                .subtract(273.15)
+            )
+            ea_img = (
+                tdew_img.add(237.3).pow(-1).multiply(tdew_img).multiply(17.27).exp().multiply(0.6108)
+                .multiply(1000)
+            )
+        elif self.ea_source.upper() in ['NLDAS', 'NLDAS2']:
+            # NLDAS air pressure is in units of Pa
+            ea_coll_id = 'NASA/NLDAS/FORA0125_H002'
+            sph_img = self.hourly_source_interpolate(ea_coll_id, 'specific_humidity', self._date)
+            pair_img = self.hourly_source_interpolate(ea_coll_id, 'pressure', self._date)
+            ea_img = sph_img.multiply(0.378).add(0.622).pow(-1).multiply(sph_img).multiply(pair_img)
+        elif self.ea_source.upper() == 'RTMA':
+            # RTMA air pressure is in units of Pa
+            ea_coll_id = 'NOAA/NWS/RTMA'
+            sph_img = self.hourly_source_interpolate(ea_coll_id, 'SPFH', self._date)
+            pair_img = self.hourly_source_interpolate(ea_coll_id, 'PRES', self._date)
+            ea_img = sph_img.multiply(0.378).add(0.622).pow(-1).multiply(sph_img).multiply(pair_img)
         else:
             raise ValueError(f'Unsupported ea_source: {self.ea_source}\n')
 
-        return ea_img.rename(['ea']).resample(DOWNSAMPLE_METHOD)
+        return self.LST.multiply(0).add(ea_img.resample(DOWNSAMPLE_METHOD)).rename(['ea'])
 
     @lazy_property
     def Ea_Pa(self):
@@ -727,12 +727,21 @@ class Image:
             rs_img = ee.Image.constant(float(self.rs_source))
         elif isinstance(self.rs_source, ee.computedobject.ComputedObject):
             rs_img = ee.Image(self.rs_source)
-        elif self.rs_source.upper() == 'NLDAS':
-            rs_img = self.nldas_interpolate('shortwave_radiation', self._date)
+        elif self.rs_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+            rs_img = self.hourly_source_interpolate(
+                'ECMWF/ERA5_LAND/HOURLY', 'surface_solar_radiation_downwards_hourly', self._date
+            )
+            # Convert J m-2 to W m-2 hr-1
+            rs_img = rs_img.divide(3600)
+        elif self.rs_source.upper() in ['NLDAS', 'NLDAS2']:
+            rs_img = self.hourly_source_interpolate(
+                'NASA/NLDAS/FORA0125_H002', 'shortwave_radiation', self._date
+            )
         else:
             raise ValueError(f'Unsupported rs_source: {self.rs_source}\n')
 
-        return rs_img.rename(['rs']).resample(DOWNSAMPLE_METHOD)
+        # Resample to the Landsat LST grid
+        return self.LST.multiply(0).add(rs_img.resample(DOWNSAMPLE_METHOD)).rename(['rs'])
 
     @lazy_property
     def ta(self):
@@ -752,60 +761,46 @@ class Image:
             ta_img = ee.Image.constant(float(self.ta_source))
         elif isinstance(self.ta_source, ee.computedobject.ComputedObject):
             ta_img = ee.Image(self.ta_source)
-        elif self.ta_source.upper() == 'NLDAS':
-            ta_img = self.nldas_interpolate('temperature', self._date).add(273.15)
+        elif self.ta_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+            ta_coll_id = 'ECMWF/ERA5_LAND/HOURLY'
+            ta_img = self.hourly_source_interpolate(ta_coll_id, 'temperature_2m', self._date)
+        elif self.ta_source.upper() in ['NLDAS', 'NLDAS2']:
+            ta_coll_id = 'NASA/NLDAS/FORA0125_H002'
+            ta_img = self.hourly_source_interpolate(ta_coll_id, 'temperature', self._date).add(273.15)
+        elif self.ta_source.upper() == 'RTMA':
+            ta_img = self.hourly_source_interpolate('NOAA/NWS/RTMA', 'TMP', self._date).add(273.15)
         else:
             raise ValueError(f'Unsupported ta_source: {self.ta_source}\n')
 
-        return ta_img.rename(['Ta']).resample(DOWNSAMPLE_METHOD)
+        # Resample to the Landsat LST grid
+        return self.LST.multiply(0).add(ta_img.resample(DOWNSAMPLE_METHOD)).rename(['Ta'])
 
     @staticmethod
-    def nldas_interpolate(band_name, interp_date, interp_flag=True):
-        """
+    def hourly_source_interpolate(coll_id, band_name, interp_date):
+        """Interpolate hourly image collections
+
         Parameters
         ----------
+        coll_id : str
         band_name : str
         interp_date : ee.Date
-        interp_flag : bool
 
         Returns
         -------
         ee.Image
 
-        Notes
-        -----
-        Interpolate rs hourly image at image time
-        Hourly Rs is time average so time starts are 30 minutes early
-        Move image time 30 minutes earlier to simplify filtering/interpolation
-
         """
-        nldas_coll = ee.ImageCollection('NASA/NLDAS/FORA0125_H002').select([band_name])
 
-        if interp_flag:
-            # Interpolate
-            # TODO: Check if NLDAS data is average over trailing hour, instantaneous, something else.
-            #   The date may need to be shifted depending.
-            # interp_date = interp_date.advance(-0.5, 'hour')
-            prev_img = ee.Image(nldas_coll.filterDate(
-                interp_date.advance(-1, 'hour'), interp_date).first())
-            next_img = ee.Image(nldas_coll.filterDate(
-                interp_date, interp_date.advance(1, 'hour')).first())
-            prev_time = ee.Number(prev_img.get('system:time_start'))
-            next_time = ee.Number(next_img.get('system:time_start'))
-            interp_time = interp_date.millis().subtract(prev_time) \
-                .divide(next_time.subtract(prev_time))
-            output_img = next_img.subtract(prev_img).multiply(interp_time).add(prev_img)
-        else:
-            # Select the first NLDAS image after the image date
-            output_coll = ee.ImageCollection(nldas_coll) \
-                .filterDate(interp_date, interp_date.advance(1, 'hour'))
-            # Select the first NLDAS image closest to the image date
-            # output_coll = ee.ImageCollection(nldas_coll) \
-            #     .filterDate(interp_date.advance(30, 'minute'),
-            #                 interp_date.advance(30, 'minute'))
-            output_img = ee.Image(output_coll.first())
-
-        return output_img
+        # TODO: Check if NLDAS data is average over trailing hour, instantaneous, something else.
+        #   The date may need to be shifted depending.
+        # interp_date = interp_date.advance(-0.5, 'hour')
+        coll = ee.ImageCollection(coll_id).select([band_name])
+        prev_img = ee.Image(coll.filterDate(interp_date.advance(-1, 'hour'), interp_date).first())
+        next_img = ee.Image(coll.filterDate(interp_date, interp_date.advance(1, 'hour')).first())
+        prev_time = ee.Number(prev_img.get('system:time_start'))
+        next_time = ee.Number(next_img.get('system:time_start'))
+        interp_time = interp_date.millis().subtract(prev_time).divide(next_time.subtract(prev_time))
+        return next_img.subtract(prev_img).multiply(interp_time).add(prev_img)
 
     @lazy_property
     def Ta_K(self):

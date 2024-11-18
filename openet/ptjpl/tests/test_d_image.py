@@ -215,26 +215,24 @@ def test_Image_init_variable_properties(variable):
 
 
 @pytest.mark.parametrize(
-    'band, time, interp_flag, xy, expected',
+    'coll_id, band, time, xy, expected',
     [
-        ['shortwave_radiation', SCENE_TIME, False, TEST_POINT, 933.5350],
-        ['shortwave_radiation', SCENE_TIME, True, TEST_POINT, 900.3892],
-        ['temperature', SCENE_TIME, False, TEST_POINT, 41.7300],
-        ['temperature', SCENE_TIME, True, TEST_POINT, 41.4162],
-        ['specific_humidity', SCENE_TIME, False, TEST_POINT, 0.0062153],
-        ['specific_humidity', SCENE_TIME, True, TEST_POINT, 0.0062153],
-        # Other NLDAS bands
-        # ['longwave_radiation', SCENE_TIME, False, TEST_POINT, 0],
-        # ['longwave_radiation', SCENE_TIME, True, TEST_POINT, 0],
-        # ['wind_u', SCENE_TIME, False, TEST_POINT, 0],
-        # ['wind_u', SCENE_TIME, True, TEST_POINT, 0],
-        # ['wind_v', SCENE_TIME, False, TEST_POINT, 0],
-        # ['wind_v', SCENE_TIME, True, TEST_POINT, 0],
+        # NLDAS
+        ['NASA/NLDAS/FORA0125_H002', 'temperature', SCENE_TIME, TEST_POINT, 41.4162],
+        ['NASA/NLDAS/FORA0125_H002', 'specific_humidity', SCENE_TIME, TEST_POINT, 0.0062153],
+        ['NASA/NLDAS/FORA0125_H002', 'shortwave_radiation', SCENE_TIME, TEST_POINT, 900.3892],
+        # ['NASA/NLDAS/FORA0125_H002', 'longwave_radiation', SCENE_TIME, True, TEST_POINT, 0],
+        # ['NASA/NLDAS/FORA0125_H002', 'wind_u', SCENE_TIME, True, TEST_POINT, 0],
+        # ['NASA/NLDAS/FORA0125_H002', 'wind_v', SCENE_TIME, True, TEST_POINT, 0],
+        # ERA5-Land
+        ['ECMWF/ERA5_LAND/HOURLY', 'temperature_2m', SCENE_TIME, TEST_POINT, 310.9816],
+        # RTMA
+        ['NOAA/NWS/RTMA', 'TMP', SCENE_TIME, TEST_POINT, 33.74725],
     ]
 )
-def test_Image_nldas_interpolate(band, time, interp_flag, xy, expected, tol=0.0001):
+def test_Image_hourly_source_interpolate(coll_id, band, time, xy, expected, tol=0.0001):
     output = utils.point_image_value(
-        ptjpl.Image.nldas_interpolate(band, ee.Date(time), interp_flag), xy
+        ptjpl.Image.hourly_source_interpolate(coll_id, band, ee.Date(time)), xy, scale=30
     )
     assert abs(output[band] - expected) <= tol
 
@@ -242,7 +240,12 @@ def test_Image_nldas_interpolate(band, time, interp_flag, xy, expected, tol=0.00
 @pytest.mark.parametrize(
     'ea_source, xy, expected',
     [
-        ['NLDAS', TEST_POINT, 1012.1051],
+        ['NLDAS', TEST_POINT, 1012.1425],
+        ['NLDAS2', TEST_POINT, 1012.1425],
+        ['ERA5LAND', TEST_POINT, 1080.6605],
+        #['ERA5-LAND', TEST_POINT, 1080.6605],
+        #['ERA5_LAND', TEST_POINT, 1080.6605],
+        ['RTMA', TEST_POINT, 1236.5126],
         # Check string/float constant values
         ['1000', TEST_POINT, 1000],
         [1000, TEST_POINT, 1000],
@@ -254,7 +257,7 @@ def test_Image_ea_sources(ea_source, xy, expected, tol=0.01):
     # Uncomment to check values for other dates
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
-    output = utils.point_image_value(ee.Image(m.ea), xy)
+    output = utils.point_image_value(ee.Image(m.ea), xy, scale=30)
     assert abs(output['ea'] - expected) <= tol
 
 
@@ -267,6 +270,10 @@ def test_Image_ea_sources_exception():
     'LWin_source, xy, expected',
     [
         ['NLDAS', TEST_POINT, 441.6057],
+        ['NLDAS2', TEST_POINT, 441.6057],
+        ['ERA5LAND', TEST_POINT, 400.9422],
+        #['ERA5-LAND', TEST_POINT, 400.9422],
+        #['ERA5_LAND', TEST_POINT, 400.9422],
         # Check string/float constant values
         ['440', TEST_POINT, 440],
         [440, TEST_POINT, 440],
@@ -278,7 +285,7 @@ def test_Image_LWin_sources(LWin_source, xy, expected, tol=0.01):
     # Uncomment to check values for other dates
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
-    output = utils.point_image_value(ee.Image(m.LWin), xy)
+    output = utils.point_image_value(ee.Image(m.LWin), xy, scale=30)
     assert abs(output['LWin'] - expected) <= tol
 
 
@@ -290,7 +297,11 @@ def test_Image_LWin_sources_exception():
 @pytest.mark.parametrize(
     'rs_source, xy, expected',
     [
-        ['NLDAS', TEST_POINT, 903.4149],
+        ['NLDAS', TEST_POINT, 903.40464],
+        ['NLDAS2', TEST_POINT, 903.40464],
+        ['ERA5LAND', TEST_POINT, 874.73105],
+        #['ERA5-LAND', TEST_POINT, 874.73105],
+        #['ERA5_LAND', TEST_POINT, 874.73105],
         # Check string/float constant values
         ['900.0', TEST_POINT, 900.0],
         [900.0, TEST_POINT, 900.0],
@@ -302,7 +313,7 @@ def test_Image_rs_sources(rs_source, xy, expected, tol=0.0001):
     # Uncomment to check values for other dates
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
-    output = utils.point_image_value(ee.Image(m.rs), xy)
+    output = utils.point_image_value(ee.Image(m.rs), xy, scale=30)
     assert abs(output['rs'] - expected) <= tol
 
 
@@ -314,7 +325,12 @@ def test_Image_rs_sources_exception():
 @pytest.mark.parametrize(
     'ta_source, xy, expected',
     [
-        ['NLDAS', TEST_POINT, 314.3867],
+        ['NLDAS', TEST_POINT, 314.3862],
+        ['NLDAS2', TEST_POINT, 314.3862],
+        ['ERA5LAND', TEST_POINT, 311.0363],
+        #['ERA5-LAND', TEST_POINT, 311.0363],
+        #['ERA5_LAND', TEST_POINT, 311.0363],
+        ['RTMA', TEST_POINT, 306.8692],
         # Check string/float constant values
         ['315.0', TEST_POINT, 315.0],
         [315.0, TEST_POINT, 315.0],
@@ -326,7 +342,7 @@ def test_Image_ta_sources(ta_source, xy, expected, tol=0.0001):
     # Uncomment to check values for other dates
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
-    output = utils.point_image_value(ee.Image(m.ta), xy)
+    output = utils.point_image_value(ee.Image(m.ta), xy, scale=30)
     assert abs(output['Ta'] - expected) <= tol
 
 
@@ -338,7 +354,12 @@ def test_Image_ta_sources_exception():
 @pytest.mark.parametrize(
     'windspeed_source, xy, expected',
     [
-        ['NLDAS', TEST_POINT, 3.0524198],
+        ['NLDAS', TEST_POINT, 3.05217],
+        ['NLDAS2', TEST_POINT, 3.05217],
+        ['ERA5LAND', TEST_POINT, 2.52221],
+        #['ERA5-LAND', TEST_POINT, 2.52221],
+        #['ERA5_LAND', TEST_POINT, 2.52221],
+        ['RTMA', TEST_POINT, 3.7997],
         # Check string/float constant values
         ['3.0', TEST_POINT, 3.0],
         [3.0, TEST_POINT, 3.0],
@@ -350,7 +371,7 @@ def test_Image_windspeed_sources(windspeed_source, xy, expected, tol=0.0001):
     # Uncomment to check values for other dates
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
-    output = utils.point_image_value(ee.Image(m.U), xy)
+    output = utils.point_image_value(ee.Image(m.U), xy, scale=30)
     assert abs(output['U'] - expected) <= tol
 
 
@@ -798,7 +819,7 @@ def test_Model_crop_type_source_openet_crop_type(crop_type_source):
 )
 def test_Model_crop_type_values(crop_type_source, xy, expected):
     output = utils.point_image_value(
-        default_image_obj(crop_type_source=crop_type_source).crop_type, xy
+        default_image_obj(crop_type_source=crop_type_source).crop_type, xy, scale=30
     )
     assert output['crop_type'] == expected
 
