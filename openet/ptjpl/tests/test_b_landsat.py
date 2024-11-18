@@ -17,11 +17,11 @@ SCENE_DATE = SCENE_DT.strftime('%Y-%m-%d')
 SCENE_TIME = utils.millis(SCENE_DT)
 
 
-def sr_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2, bt=300):
+def sr_image(blue=0.2, green=0.2, red=0.2, nir=0.7, swir1=0.2, swir2=0.2, bt=300, qa_pixel=0):
     """Construct a fake Landsat 8 image with renamed bands"""
     return (
-        ee.Image.constant([blue, green, red, nir, swir1, swir2, bt])
-        .rename(['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'tir'])
+        ee.Image.constant([blue, green, red, nir, swir1, swir2, bt, qa_pixel])
+        .rename(['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'tir', 'QA_PIXEL'])
         .set({
             'system:time_start': ee.Date(SCENE_DATE).millis(),
             'k1_constant': ee.Number(607.76),
@@ -205,3 +205,27 @@ def test_Image_albedo_calculation(blue, green, red, nir, swir1, swir2, expected,
         sr_image(blue=blue, green=green, red=red, nir=nir, swir1=swir1, swir2=swir2)
     ))
     assert abs(output['albedo'] - expected) <= tol
+
+
+def test_Image_water_mask_band_name():
+    output = landsat.water_mask(sr_image()).getInfo()['bands'][0]['id']
+    assert output == 'water_mask'
+
+
+@pytest.mark.parametrize(
+    'blue, green, red, nir, swir1, swir2, qa_pixel, expected',
+    [
+        # Not water
+        [0.2, 0.2, 0.2, 0.7, 0.2, 0.2, '0000000000000000', 0],
+        [0.2, 0.2, 0.2, 0.7, 0.2, 0.2, '0000000000000001', 0],
+        # QA_PIXEL water flag
+        [0.2, 0.2, 0.2, 0.7, 0.2, 0.2, '0000000010000000', 1],
+        # Negative indices
+        [0.2, 0.3, 0.3, 0.2, 0.2, 0.2, '0000000000000000', 1],
+    ]
+)
+def test_Image_water_mask_calculation(blue, green, red, nir, swir1, swir2, qa_pixel, expected, tol=0.000001):
+    output = utils.constant_image_value(landsat.water_mask(sr_image(
+        blue=blue, green=green, red=red, nir=nir, swir1=swir1, swir2=swir2, qa_pixel=int(qa_pixel, 2)
+    )))
+    assert abs(output['water_mask'] - expected) <= tol

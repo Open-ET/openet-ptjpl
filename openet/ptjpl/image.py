@@ -35,7 +35,8 @@ class Image:
     _C2_LST_CORRECT = True  # Enable (True) C2 LST correction to recalculate LST
 
     def __init__(
-            self, image,
+            self,
+            image,
             windspeed_source='NLDAS',
             ea_source='NLDAS',
             rs_source='NLDAS',
@@ -54,7 +55,7 @@ class Image:
         ----------
         image : ee.Image
             A "prepped" PT-JPL input image.
-            Bands: 'albedo', 'ndvi', 'lst'
+            Bands: 'albedo', 'emissivity', 'ndvi', 'lst', 'water_mask'.
             Properties: 'system:index', 'system:time_start'.
         ea_source : {'NLDAS'}, optional
             Actual vapor pressure source keyword (the default is 'NLDAS').
@@ -97,6 +98,7 @@ class Image:
         # self.emissivity = self.image.select('emissivity')
         # self.lst = self.image.select('lst')
         # self.ndvi = self.image.select('ndvi')
+        # self.water_mask = self.image.select('water_mask')
 
         # Copy system properties
         self._id = self.image.get('system:id')
@@ -110,9 +112,11 @@ class Image:
 
         # # Build SCENE_ID from the (possibly merged) system:index
         # scene_id = ee.List(ee.String(self._index).split('_')).slice(-3)
-        # self._scene_id = ee.String(scene_id.get(0)).cat('_') \
-        #     .cat(ee.String(scene_id.get(1))).cat('_') \
+        # self._scene_id = (
+        #     ee.String(scene_id.get(0)).cat('_')
+        #     .cat(ee.String(scene_id.get(1))).cat('_')
         #     .cat(ee.String(scene_id.get(2)))
+        # )
 
         # Build WRS2_TILE from the scene_id
         # self._wrs2_tile = ee.String('p').cat(self._scene_id.slice(5, 8)) \
@@ -304,9 +308,11 @@ class Image:
     @lazy_property
     def time(self):
         """Return an image of the 0 UTC time (in milliseconds)"""
-        return self.mask \
-            .double().multiply(0).add(utils.date_to_time_0utc(self._date)) \
+        return (
+            self.mask
+            .double().multiply(0).add(utils.date_to_time_0utc(self._date))
             .rename(['time']).set(self._properties)
+        )
 
     @lazy_property
     def hour_utc(self):
@@ -363,35 +369,28 @@ class Image:
         """Normalized difference vegetation index (NDVI)"""
         return self.image.select(['ndvi']).set(self._properties)
 
-    @lazy_property
-    def NDWI(self):
-        """Normalized Difference Water Index (NDWI)"""
-        return self.image.select(['ndwi']).set(self._properties)
+    # Deprecated - Water mask is being generated inside landsat model
+    # @lazy_property
+    # def NDWI(self):
+    #     """Normalized Difference Water Index (NDWI)"""
+    #     return self.image.select(['ndwi']).set(self._properties)
 
-    @lazy_property
-    def MNDWI(self):
-        """Modified Normalized Difference Water Index (NDWI)"""
-        return self.image.select(['mndwi']).set(self._properties)
+    # Deprecated - Water mask is being generated inside landsat model
+    # @lazy_property
+    # def MNDWI(self):
+    #     """Modified Normalized Difference Water Index (NDWI)"""
+    #     return self.image.select(['mndwi']).set(self._properties)
 
-    @lazy_property
-    def WRI(self):
-        """Water Ratio Index (WRI)"""
-        return self.image.select(['wri']).set(self._properties)
+    # Deprecated - Water mask is being generated inside landsat model
+    # @lazy_property
+    # def WRI(self):
+    #     """Water Ratio Index (WRI)"""
+    #     return self.image.select(['wri']).set(self._properties)
 
     @lazy_property
     def water_mask(self):
         """Water pixel identification"""
-        # TODO: Incorporate QA_PIXEL water mask and check albedo threshold
-        # The albedo threshold is being used to catch saturated pixels
-        #   but could be replaced with the QA_RADSAT band instead
-        return (
-            self.NDWI.gte(0)
-            .And(self.MNDWI.gte(0))
-            .And(self.WRI.gt(1))
-            .And(self.NDVI.lte(0))
-            .And(self.albedo.lt(0.3))
-            .rename(['water_mask']).set(self._properties)
-        )
+        return self.image.select(['water_mask']).set(self._properties)
 
     @lazy_property
     def SAVI(self):
@@ -433,8 +432,7 @@ class Image:
     # @lazy_property
     # def LWin(self):
     #     """Instantaneous incoming longwave radiation in watts per square meter"""
-    #     return ptjpl.LWin(self.Ta_K, self.Ea_Pa) \
-    #         .rename(['LWin']).set(self._properties)
+    #     return ptjpl.LWin(self.Ta_K, self.Ea_Pa).rename(['LWin']).set(self._properties)
 
     @lazy_property
     def LWin(self):
@@ -994,14 +992,9 @@ class Image:
             landsat.albedo_metric(prep_image),
             landsat.emissivity_metric(prep_image),
             lst.rename(['lst']),
-            # CGM - Don't compute LST since it is being provided
-            # prep_image.select(['tir'], ['lst']),
-            # landsat.lst(prep_image),
             landsat.ndvi(prep_image),
-            landsat.ndwi(prep_image),
-            landsat.mndwi(prep_image),
-            landsat.wri(prep_image),
-            # cloud_mask.Not(),
+            landsat.water_mask(prep_image),
+            #cloud_mask.Not(),
         ])
 
         # Apply the cloud mask and add properties

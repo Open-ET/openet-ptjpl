@@ -279,9 +279,35 @@ def mndwi(landsat_image):
 
 def wri(landsat_image):
     """Water Ratio Index (WRI)"""
+    # Force minimum value to be > 0 to avoid divide by zero
+    output = landsat_image.max(0.001).expression('(b("green") + b("red")) / (b("nir") + b("swir2"))')
+    # # TODO: Should the WRI value be overwritten to indicate water (>1)
+    #    if all reflectance values are low?
+    # output = output.where(
+    #     landsat_image.select(['nir']).lte(0).And(landsat_image.select(['swir2']).lte(0)), 2
+    # )
+    return output.rename(['wri'])
+
+
+def water_mask(landsat_image):
+    """Water pixel identification"""
+    qa_water_mask = landsat_image.select(['QA_PIXEL']).rightShift(7).bitwiseAnd(1)
+
+    # CGM - The conditionals should probably all be changed to gte or lte
+    #   since normalized_difference function is setting them to zero for low reflectance
+    #   but leaving them as is for now to match original implementation
+    #   and the QA_PIXEL water mask should catch most water pixels
+    ptjl_water_mask = (
+        ndwi(landsat_image).gt(0)
+        .And(mndwi(landsat_image).gt(0))
+        .And(wri(landsat_image).gt(1))
+        .And(ndvi(landsat_image).lt(0))
+    )
+
+    # The albedo threshold is being used to catch saturated pixels
+    #   but could be replaced with the QA_RADSAT band instead
     return (
-        landsat_image
-        .max(0)
-        .expression('(b("green") + b("red")) / (b("nir") + b("swir2"))')
-        .rename(['wri'])
+        qa_water_mask
+        .Or(ptjl_water_mask.And(albedo_metric(landsat_image).lt(0.3)))
+        .rename(['water_mask'])
     )

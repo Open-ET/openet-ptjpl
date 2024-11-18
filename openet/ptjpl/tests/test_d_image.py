@@ -36,11 +36,11 @@ TEST_POINT = [-120.113, 36.336]
 #             'k2_constant': ee.Number(1260.56)})
 
 
-def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8, ndwi=0.0, mndwi=0.0, wri=0.45):
+def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8, water_mask=0):
     # First construct a fake 'prepped' input image
     return (
-        ee.Image.constant([albedo, emissivity, lst, ndvi, ndwi, mndwi, wri])
-        .rename(['albedo', 'emissivity', 'lst', 'ndvi', 'ndwi', 'mndwi', 'wri'])
+        ee.Image.constant([albedo, emissivity, lst, ndvi, water_mask])
+        .rename(['albedo', 'emissivity', 'lst', 'ndvi', 'water_mask'])
         .set({
             'system:index': SCENE_ID,
             'system:time_start': SCENE_TIME,
@@ -56,9 +56,7 @@ def default_image_args(
         emissivity=0.99,
         lst=300,
         ndvi=0.8,
-        ndwi=0.0,
-        mndwi=0.0,
-        wri=0.45,
+        water_mask=0,
         ea_source=1000,
         LWin_source=440,
         rs_source=900,
@@ -80,8 +78,9 @@ def default_image_args(
         crop_type_remap='CDL',
         ):
     return {
-        'image': default_image(albedo=albedo, emissivity=emissivity, lst=lst,
-                               ndvi=ndvi, ndwi=ndwi, mndwi=mndwi, wri=wri),
+        'image': default_image(
+            albedo=albedo, emissivity=emissivity, lst=lst, ndvi=ndvi, water_mask=water_mask,
+        ),
         'ea_source': ea_source,
         'LWin_source': LWin_source,
         'rs_source': rs_source,
@@ -109,9 +108,7 @@ def default_image_obj(
         emissivity=0.99,
         lst=300,
         ndvi=0.8,
-        ndwi=0.0,
-        mndwi=0.0,
-        wri=0.45,
+        water_mask=0,
         ea_source=1000,
         LWin_source=440,
         rs_source=900,
@@ -137,9 +134,7 @@ def default_image_obj(
         emissivity=emissivity,
         lst=lst,
         ndvi=ndvi,
-        ndwi=ndwi,
-        mndwi=mndwi,
-        wri=wri,
+        water_mask=water_mask,
         ea_source=ea_source,
         LWin_source=LWin_source,
         rs_source=rs_source,

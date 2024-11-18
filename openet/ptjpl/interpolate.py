@@ -268,7 +268,7 @@ def from_scene_et_fraction(
         )
         time_img = (
             img.select(['et_fraction']).double().multiply(0)
-            .add(utils.date_to_time_0utc(ee.Date(img.get('system:time_start'))).millis())
+            .add(utils.date_to_time_0utc(ee.Date(img.get('system:time_start'))))
             .rename(['time'])
         )
 
@@ -756,7 +756,7 @@ def from_scene_et_actual(
         mask_img = img.select(['et']).multiply(0).add(1).updateMask(1).uint8().rename('mask')
         time_img = (
             img.select(['et']).double().multiply(0)
-            .add(utils.date_to_time_0utc(ee.Date(img.get('system:time_start'))).millis())
+            .add(utils.date_to_time_0utc(ee.Date(img.get('system:time_start'))))
             .rename('time')
         )
 
@@ -782,7 +782,7 @@ def from_scene_et_actual(
 
     # For scene count, compute the composite/mosaic image for the mask band only
     if ('scene_count' in variables) or ('count' in variables):
-        aggregate_coll = aggregate_to_daily(
+        aggregate_coll = openet.core.interpolate.aggregate_to_daily(
             image_coll=scene_coll.select(['mask']),
             start_date=start_date,
             end_date=end_date,
