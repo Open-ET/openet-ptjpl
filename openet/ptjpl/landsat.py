@@ -237,32 +237,77 @@ def lst(landsat_image):
     return lst.rename(['lst'])
 
 
+def normalized_difference(image, b1_name, b2_name):
+    """Generic normalized difference index function to handle negative reflectance values"""
+
+    # Force the input values to be at greater than or equal to zero
+    #   since C02 surface reflectance values can be negative
+    #   but the normalizedDifference function will return nodata
+    ndi = (
+        image.select([b1_name, b2_name]).max(0)
+        .normalizedDifference([b1_name, b2_name])
+    )
+
+    # Assume that low reflectance values are unreliable for computing the index
+    # If both reflectance values are below the minimum, set the output to 0
+    # If either of the reflectance values was below 0, set the output to 0
+    b1 = image.select([b1_name])
+    b2 = image.select([b2_name])
+    ndi = ndi.where(b1.lt(0.01).And(b2.lt(0.01)), 0)
+    # ndi = ndi.where(b1.lt(0).Or(b2.lt(0)), 0)
+
+    return ndi.rename('ndi')
+
+
 def ndvi(landsat_image):
     """Normalized Difference Vegetation Index (NDVI)"""
-    return ee.Image(landsat_image).normalizedDifference(['nir', 'red']).rename(['ndvi'])
+    return normalized_difference(landsat_image, 'nir', 'red').rename(['ndvi'])
+    # return landsat_image.normalizedDifference(['nir', 'red']).rename(['ndvi'])
 
 
 def ndwi(landsat_image):
     """Normalized Difference Water Index (NDWI)"""
-    return ee.Image(landsat_image).normalizedDifference(['green', 'nir']).rename(['ndwi'])
+    return normalized_difference(landsat_image, 'green', 'nir').rename(['ndwi'])
+    # return landsat_image.normalizedDifference(['green', 'nir']).rename(['ndwi'])
 
 
 def mndwi(landsat_image):
     """Modified Normalized Difference Water Index (MNDWI)"""
-    return ee.Image(landsat_image).normalizedDifference(['green', 'swir2']).rename(['mndwi'])
+    return normalized_difference(landsat_image, 'green', 'swir2').rename(['mndwi'])
+    # return landsat_image.normalizedDifference(['green', 'swir2']).rename(['mndwi'])
 
 
 def wri(landsat_image):
     """Water Ratio Index (WRI)"""
-    image = ee.Image(landsat_image)
-    WRI = image.expression(
-        '(green + red) / (NIR + SWIR)',
-        {
-            'green': image.select(['green']),
-            'red': image.select(['red']),
-            'NIR': image.select(['nir']),
-            'SWIR': image.select(['swir2'])
-        }
+    # Force minimum value to be > 0 to avoid divide by zero
+    output = landsat_image.max(0.001).expression('(b("green") + b("red")) / (b("nir") + b("swir2"))')
+    # # TODO: Should the WRI value be overwritten to indicate water (>1)
+    #    if all reflectance values are low?
+    # output = output.where(
+    #     landsat_image.select(['nir']).lte(0).And(landsat_image.select(['swir2']).lte(0)), 2
+    # )
+    return output.rename(['wri'])
+
+
+def water_mask(landsat_image):
+    """Water pixel identification"""
+    qa_water_mask = landsat_image.select(['QA_PIXEL']).rightShift(7).bitwiseAnd(1)
+
+    # CGM - The conditionals should probably all be changed to gte or lte
+    #   since normalized_difference function is setting them to zero for low reflectance
+    #   but leaving them as is for now to match original implementation
+    #   and the QA_PIXEL water mask should catch most water pixels
+    ptjl_water_mask = (
+        ndwi(landsat_image).gt(0)
+        .And(mndwi(landsat_image).gt(0))
+        .And(wri(landsat_image).gt(1))
+        .And(ndvi(landsat_image).lt(0))
     )
 
-    return WRI.rename(['wri'])
+    # The albedo threshold is being used to catch saturated pixels
+    #   but could be replaced with the QA_RADSAT band instead
+    return (
+        qa_water_mask
+        .Or(ptjl_water_mask.And(albedo_metric(landsat_image).lt(0.3)))
+        .rename(['water_mask'])
+    )
