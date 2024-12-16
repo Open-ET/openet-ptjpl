@@ -490,10 +490,6 @@ def LEi(fwet, epsilon, Rnc):
 
 def LE(LEc, LEi, LEs, PET, water_mask):
     return PET.where(water_mask.Not(), LEc.add(LEi).add(LEs))
-    # LE = LEc.add(LEi).add(LEs)
-    # LE = LE.where(water_mask, PET)
-    #
-    # return LE
 
 
 def EF(LE, Rn, G):
