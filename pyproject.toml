@@ -1,6 +1,6 @@
 [project]
 name = "openet-ptjpl"
-version = "0.4.0"
+version = "0.4.1"
 authors = [
     { name = "Gregory Halverson", email = "Gregory.H.Halverson@jpl.nasa.gov" },
     { name = "Josh Fisher", email = "joshbfisher@gmail.com" },

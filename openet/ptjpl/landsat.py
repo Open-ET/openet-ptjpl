@@ -289,25 +289,51 @@ def wri(landsat_image):
     return output.rename(['wri'])
 
 
-def water_mask(landsat_image):
-    """Water pixel identification"""
-    qa_water_mask = landsat_image.select(['QA_PIXEL']).rightShift(7).bitwiseAnd(1)
+def water_mask(landsat_image, gsw_extent_flag=True):
+    """Water pixel identification
 
-    # CGM - The conditionals should probably all be changed to gte or lte
-    #   since normalized_difference function is setting them to zero for low reflectance
-    #   but leaving them as is for now to match original implementation
-    #   and the QA_PIXEL water mask should catch most water pixels
+    Parameters
+    ----------
+    landsat_image : ee.Image
+        "Prepped" Landsat image with standardized band names.
+    gsw_extent_flag : boolean
+        If True, apply the global surface water extent mask to the QA_PIXEL water mask
+        The default is True.
+
+    Returns
+    -------
+    ee.Image
+
+    """
+    # Start with a combination of indices to identify water
+    # Adding an albedo threshold limit to help catch saturated pixels that have
+    #   water index values (but it may be better to use the QA_RADSAT band instead)
+    # The conditionals should probably all be changed to gte or lte
+    #   since normalized_difference function is setting them to zero for low reflectance,
+    #   but leaving them as is for now to match original implementation,
+    #   and the QA_PIXEL water mask below should catch most water pixels
     ptjl_water_mask = (
         ndwi(landsat_image).gt(0)
         .And(mndwi(landsat_image).gt(0))
         .And(wri(landsat_image).gt(1))
         .And(ndvi(landsat_image).lt(0))
+        .And(albedo_metric(landsat_image).lt(0.3))
     )
 
-    # The albedo threshold is being used to catch saturated pixels
-    #   but could be replaced with the QA_RADSAT band instead
-    return (
-        qa_water_mask
-        .Or(ptjl_water_mask.And(albedo_metric(landsat_image).lt(0.3)))
-        .rename(['water_mask'])
-    )
+    # Using the water mask in the QA_PIXEL band to include additional water pixels
+    #   since the index values are not always reliable for identifying water when the
+    #   surface reflectance values are low
+    qa_water_mask = landsat_image.select(['QA_PIXEL']).rightShift(7).bitwiseAnd(1)
+
+    # Including the dynamic surface water max extent layer helps to exclude shadows
+    #   that are misclassified as water
+    if gsw_extent_flag:
+        gsw_mask = ee.Image('JRC/GSW1_4/GlobalSurfaceWater').select(['max_extent']).gte(1)
+        qa_water_mask = qa_water_mask.And(gsw_mask)
+
+    return ptjl_water_mask.Or(qa_water_mask).rename(['water_mask'])
+
+    # TODO: Test out assigning water when 2 of the 3 masks are True
+    #   Not sure if this is necessary but it would be nice to be able to catch
+    #   very obvious water that is in a new location not in the GSW layer
+    # return ptjl_water_mask.add(qa_water_mask).add(gsw_mask).gte(2).rename(['water_mask'])

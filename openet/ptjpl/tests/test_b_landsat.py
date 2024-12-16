@@ -225,7 +225,10 @@ def test_Image_water_mask_band_name():
     ]
 )
 def test_Image_water_mask_calculation(blue, green, red, nir, swir1, swir2, qa_pixel, expected, tol=0.000001):
-    output = utils.constant_image_value(landsat.water_mask(sr_image(
-        blue=blue, green=green, red=red, nir=nir, swir1=swir1, swir2=swir2, qa_pixel=int(qa_pixel, 2)
-    )))
+    output = utils.constant_image_value(landsat.water_mask(
+        sr_image(
+            blue=blue, green=green, red=red, nir=nir, swir1=swir1, swir2=swir2, qa_pixel=int(qa_pixel, 2)
+        ),
+        gsw_extent_flag=False
+    ))
     assert abs(output['water_mask'] - expected) <= tol
