@@ -234,6 +234,7 @@ def W(WST, Td_C, U, SWnet, Rn, water_mask):
     http://www.mdpi.com/2072-4292/8/7/583
     """
     W_MAX_PROPORTION = 1
+    # W_MAX_PROPORTION = 0.999
 
     Tn = WST.subtract(Td_C).multiply(0.5)
 
@@ -436,7 +437,7 @@ def LEc(fwet, fg, fT, fM, epsilon, Rnc):
             'fT': fT,
             'fM': fM,
             'epsilon': epsilon,
-            'Rnc': Rnc
+            'Rnc': Rnc,
         }
     )
     # LEc =  fwet.multiply(-1).add(1).multiply(PT_ALPHA).multiply(epsilon) \

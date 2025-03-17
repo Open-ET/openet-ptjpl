@@ -71,8 +71,8 @@ def test_from_scene_et_fraction_t_interval_daily_values(tol=0.0001):
                     'et_reference_band': 'eto',
                     'et_reference_factor': 1.0,
                     'et_reference_resample': 'nearest'},
-        t_interval='daily')
-
+        t_interval='daily',
+    )
     TEST_POINT = (-121.5265, 38.7399)
     output = utils.point_coll_value(output_coll, TEST_POINT, scale=30)
     assert abs(output['ndvi']['2017-07-10'] - 0.6) <= tol
@@ -95,8 +95,8 @@ def test_from_scene_et_fraction_t_interval_monthly_values(tol=0.0001):
                     'et_reference_band': 'eto',
                     'et_reference_factor': 1.0,
                     'et_reference_resample': 'nearest'},
-        t_interval='monthly')
-
+        t_interval='monthly',
+    )
     TEST_POINT = (-121.5265, 38.7399)
     output = utils.point_coll_value(output_coll, TEST_POINT, scale=30)
     assert abs(output['ndvi']['2017-07-01'] - 0.6) <= tol
@@ -116,8 +116,8 @@ def test_from_scene_et_fraction_t_interval_custom_values(tol=0.0001):
                     'et_reference_band': 'eto',
                     'et_reference_factor': 1.0,
                     'et_reference_resample': 'nearest'},
-        t_interval='custom')
-
+        t_interval='custom',
+    )
     TEST_POINT = (-121.5265, 38.7399)
     output = utils.point_coll_value(output_coll, TEST_POINT, scale=30)
     assert abs(output['ndvi']['2017-07-01'] - 0.6) <= tol
@@ -135,14 +135,13 @@ def test_from_scene_et_actual_t_interval_daily_values(tol=0.0001):
         interp_args={'interp_method': 'linear', 'interp_days': 32,
                      'interp_source': 'IDAHO_EPSCOR/GRIDMET',
                      'interp_band': 'eto',
-                     # 'interp_factor': 1.0,
                      'interp_resample': 'nearest'},
         model_args={'et_reference_source': 'IDAHO_EPSCOR/GRIDMET',
                     'et_reference_band': 'eto',
                     'et_reference_factor': 1.0,
                     'et_reference_resample': 'nearest'},
-        t_interval='daily')
-
+        t_interval='daily',
+    )
     TEST_POINT = (-121.5265, 38.7399)
     output = utils.point_coll_value(output_coll, TEST_POINT, scale=30)
     assert abs(output['et_fraction']['2017-07-10'] - 0.5970309972763062) <= tol
@@ -161,14 +160,13 @@ def test_from_scene_et_actual_t_interval_monthly_values(tol=0.0001):
         interp_args={'interp_method': 'linear', 'interp_days': 32,
                      'interp_source': 'IDAHO_EPSCOR/GRIDMET',
                      'interp_band': 'eto',
-                     # 'interp_factor': 1.0,
                      'interp_resample': 'nearest'},
         model_args={'et_reference_source': 'IDAHO_EPSCOR/GRIDMET',
                     'et_reference_band': 'eto',
                     'et_reference_factor': 1.0,
                     'et_reference_resample': 'nearest'},
-        t_interval='monthly')
-
+        t_interval='monthly',
+    )
     TEST_POINT = (-121.5265, 38.7399)
     output = utils.point_coll_value(output_coll, TEST_POINT, scale=30)
     assert abs(output['et']['2017-07-01'] - 145.9705047607422) <= tol
@@ -185,14 +183,13 @@ def test_from_scene_et_actual_t_interval_custom_values(tol=0.0001):
         interp_args={'interp_method': 'linear', 'interp_days': 32,
                      'interp_source': 'IDAHO_EPSCOR/GRIDMET',
                      'interp_band': 'eto',
-                     # 'interp_factor': 1.0,
                      'interp_resample': 'nearest'},
         model_args={'et_reference_source': 'IDAHO_EPSCOR/GRIDMET',
                     'et_reference_band': 'eto',
                     'et_reference_factor': 1.0,
                     'et_reference_resample': 'nearest'},
-        t_interval='custom')
-
+        t_interval='custom',
+    )
     TEST_POINT = (-121.5265, 38.7399)
     output = utils.point_coll_value(output_coll, TEST_POINT, scale=30)
     assert abs(output['et']['2017-07-01'] - 145.9705047607422) <= tol
@@ -209,14 +206,13 @@ def test_from_scene_et_actual_t_interval_monthly_et_reference_factor(tol=0.0001)
         interp_args={'interp_method': 'linear', 'interp_days': 32,
                      'interp_source': 'IDAHO_EPSCOR/GRIDMET',
                      'interp_band': 'eto',
-                     # 'interp_factor': 1.0,
                      'interp_resample': 'nearest'},
         model_args={'et_reference_source': 'IDAHO_EPSCOR/GRIDMET',
                     'et_reference_band': 'eto',
                     'et_reference_factor': 0.5,
                     'et_reference_resample': 'nearest'},
-        t_interval='monthly')
-
+        t_interval='monthly',
+    )
     TEST_POINT = (-121.5265, 38.7399)
     output = utils.point_coll_value(output_coll, TEST_POINT, scale=30)
     assert abs(output['et']['2017-07-01'] - 145.9705047607422) <= tol
@@ -233,14 +229,13 @@ def test_from_scene_et_actual_t_interval_monthly_et_reference_resample(tol=0.000
         interp_args={'interp_method': 'linear', 'interp_days': 32,
                      'interp_source': 'IDAHO_EPSCOR/GRIDMET',
                      'interp_band': 'eto',
-                     'interp_factor': 1.0,
                      'interp_resample': 'bilinear'},
         model_args={'et_reference_source': 'IDAHO_EPSCOR/GRIDMET',
                     'et_reference_band': 'eto',
                     'et_reference_factor': 1.0,
                     'et_reference_resample': 'bilinear'},
-        t_interval='monthly')
-
+        t_interval='monthly',
+    )
     TEST_POINT = (-121.5265, 38.7399)
     output = utils.point_coll_value(output_coll, TEST_POINT, scale=30)
     assert abs(output['et']['2017-07-01'] - 145.86253356933594) <= tol
@@ -257,18 +252,15 @@ def test_from_scene_et_actual_t_interval_daily_et_fraction_max(tol=0.0001):
         interp_args={'interp_method': 'linear', 'interp_days': 32,
                      'interp_source': 'IDAHO_EPSCOR/GRIDMET',
                      'interp_band': 'eto',
-                     # 'interp_factor': 1.0,
                      'interp_resample': 'nearest',
                      'et_fraction_min': 0.0,
-                     'et_fraction_max': 1.4,
-                     },
+                     'et_fraction_max': 1.4},
         model_args={'et_reference_source': 'IDAHO_EPSCOR/GRIDMET',
                     'et_reference_band': 'eto',
                     'et_reference_resample': 'nearest',
-                    'et_reference_factor': 1.0,
-                    },
-        t_interval='daily')
-
+                    'et_reference_factor': 1.0},
+        t_interval='daily',
+    )
     TEST_POINT = (-121.5265, 38.7399)
     output = utils.point_coll_value(output_coll, TEST_POINT, scale=30)
     assert abs(output['et_fraction']['2017-07-10'] - 1.4) <= tol
