@@ -58,7 +58,7 @@ def default_image_args(
         ndvi=0.8,
         water_mask=0,
         ea_source=1000,
-        LWin_source=440,
+        lwin_source=440,
         rs_source=900,
         ta_source=315,
         windspeed_source=0,
@@ -82,7 +82,7 @@ def default_image_args(
             albedo=albedo, emissivity=emissivity, lst=lst, ndvi=ndvi, water_mask=water_mask,
         ),
         'ea_source': ea_source,
-        'LWin_source': LWin_source,
+        'lwin_source': lwin_source,
         'rs_source': rs_source,
         'ta_source': ta_source,
         'windspeed_source': windspeed_source,
@@ -110,7 +110,7 @@ def default_image_obj(
         ndvi=0.8,
         water_mask=0,
         ea_source=1000,
-        LWin_source=440,
+        lwin_source=440,
         rs_source=900,
         ta_source=315,
         windspeed_source=0,
@@ -136,7 +136,7 @@ def default_image_obj(
         ndvi=ndvi,
         water_mask=water_mask,
         ea_source=ea_source,
-        LWin_source=LWin_source,
+        lwin_source=lwin_source,
         rs_source=rs_source,
         ta_source=ta_source,
         windspeed_source=windspeed_source,
@@ -160,7 +160,7 @@ def default_image_obj(
 def test_Image_init_default_parameters():
     m = ptjpl.Image(default_image())
     assert m.ea_source == 'NLDAS'
-    assert m.LWin_source == 'NLDAS'
+    assert m.lwin_source == 'NLDAS'
     assert m.rs_source == 'NLDAS'
     assert m.ta_source == 'NLDAS'
     assert m.windspeed_source == 'NLDAS'
@@ -267,21 +267,22 @@ def test_Image_ea_sources_exception():
 
 
 @pytest.mark.parametrize(
-    'LWin_source, xy, expected',
+    'lwin_source, xy, expected',
     [
         ['NLDAS', TEST_POINT, 441.6057],
         ['NLDAS2', TEST_POINT, 441.6057],
         ['ERA5LAND', TEST_POINT, 400.9422],
-        #['ERA5-LAND', TEST_POINT, 400.9422],
-        #['ERA5_LAND', TEST_POINT, 400.9422],
+        ['ERA5-LAND', TEST_POINT, 400.9422],
+        ['ERA5_LAND', TEST_POINT, 400.9422],
+        ['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 400.9422],
         # Check string/float constant values
         ['440', TEST_POINT, 440],
         [440, TEST_POINT, 440],
     ]
 )
-def test_Image_LWin_sources(LWin_source, xy, expected, tol=0.01):
+def test_Image_lwin_sources(lwin_source, xy, expected, tol=0.01):
     """Test getting LWin values for a single date at a real point"""
-    m = default_image_obj(LWin_source=LWin_source)
+    m = default_image_obj(lwin_source=lwin_source)
     # Uncomment to check values for other dates
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
@@ -289,9 +290,9 @@ def test_Image_LWin_sources(LWin_source, xy, expected, tol=0.01):
     assert abs(output['LWin'] - expected) <= tol
 
 
-def test_Image_LWin_sources_exception():
+def test_Image_lwin_sources_exception():
     with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(LWin_source='').LWin)
+        utils.getinfo(default_image_obj(lwin_source='').LWin)
 
 
 @pytest.mark.parametrize(
