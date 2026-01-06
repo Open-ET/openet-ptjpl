@@ -6,6 +6,8 @@ from . import landsat
 from . import ptjpl
 from . import utils
 
+import openet.refetgee
+
 DOWNSAMPLE_METHOD = "bilinear"
 
 STEFAN_BOLTZMAN_CONSTANT = 5.67036713e-8
@@ -279,6 +281,12 @@ class Image:
             # CGM - Should we use the ee_types here instead?
             #   i.e. ee.ee_types.isNumber(self.et_reference_source)
             et_reference_img = ee.Image.constant(self.et_reference_source)
+        elif self.et_reference_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+            et_reference_coll = (ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY')
+                           .filterDate(self.date, self.date.advance(1, 'day')))
+            et_reference_img = openet.refetgee.Daily.era5_land(et_reference_coll).etr
+            if self.et_reference_resample in ['bilinear', 'bicubic']:
+                et_reference_img = et_reference_img.resample(self.et_reference_resample)
         elif type(self.et_reference_source) is str:
             # Assume a string source is an image collection ID (not an image ID)
             et_reference_coll = (
