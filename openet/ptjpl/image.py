@@ -281,20 +281,24 @@ class Image:
             # CGM - Should we use the ee_types here instead?
             #   i.e. ee.ee_types.isNumber(self.et_reference_source)
             et_reference_img = ee.Image.constant(self.et_reference_source)
-        elif self.et_reference_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
-            et_reference_coll = (ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY')
-                           .filterDate(self.date, self.date.advance(1, 'day')))
-            et_reference_img = openet.refetgee.Daily.era5_land(et_reference_coll).etr
-            if self.et_reference_resample in ['bilinear', 'bicubic']:
-                et_reference_img = et_reference_img.resample(self.et_reference_resample)
         elif type(self.et_reference_source) is str:
-            # Assume a string source is an image collection ID (not an image ID)
-            et_reference_coll = (
-                ee.ImageCollection(self.et_reference_source)
-                .filterDate(self._start_date, self._end_date)
-                .select([self.et_reference_band])
-            )
-            et_reference_img = ee.Image(et_reference_coll.first())
+            if self.et_reference_source.upper() in [
+                'ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY'
+            ]:
+                hourly_coll = (
+                    ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY')
+                    .filterDate(self.date, self.date.advance(1, 'day'))
+                )
+                et_reference_img = openet.refetgee.Daily.era5_land(hourly_coll).etsz(self.et_reference_band)
+                # et_reference_img = openet.refetgee.Daily.era5_land(hourly_coll, fill_edge_cells=2).etr
+            else:
+                # Assume any other string source is an image collection ID (not an image ID)
+                et_reference_coll = (
+                    ee.ImageCollection(self.et_reference_source)
+                    .filterDate(self._start_date, self._end_date)
+                    .select([self.et_reference_band])
+                )
+                et_reference_img = ee.Image(et_reference_coll.first())
             if self.et_reference_resample in ['bilinear', 'bicubic']:
                 et_reference_img = et_reference_img.resample(self.et_reference_resample)
         else:
