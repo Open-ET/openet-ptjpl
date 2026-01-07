@@ -45,7 +45,6 @@ class Image:
             # Switching to lower case capitalizations for lwin_source in v0.5.0
             # Until then, the lower case parameter will be checked first
             lwin_source='NLDAS',
-            LWin_source='',
             topt_source='projects/openet/assets/ptjpl/ancillary/Topt_from_max_convolved',
             faparmax_source='projects/openet/assets/ptjpl/ancillary/fAPARmax',
             latitude=None,
@@ -141,11 +140,7 @@ class Image:
         # Model input parameters
         self.ea_source = ea_source
         self.rs_source = rs_source
-        # Keeping support for original LWin parameter capitalization
-        if lwin_source:
-            self.lwin_source = lwin_source
-        else:
-            self.lwin_source = LWin_source
+        self.lwin_source = lwin_source
         self.ta_source = ta_source
         self.windspeed_source = windspeed_source
         self.topt_source = topt_source
