@@ -285,12 +285,29 @@ class Image:
             if self.et_reference_source.upper() in [
                 'ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY'
             ]:
-                hourly_coll = (
-                    ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY')
-                    .filterDate(self.date, self.date.advance(1, 'day'))
+                # Get UTC offset from image centroid longitude (hours = lon / 15)
+                # approximate filter ERA5-Land (UTC) for the local day
+                centroid_lon = ee.Number(self.image.geometry().centroid(1).coordinates().get(0))
+                utc_offset_hours = centroid_lon.divide(15).round()
+
+                local_dt = self.date.advance(utc_offset_hours, 'hour')
+
+                local_midnight = ee.Date.fromYMD(
+                    ee.Number(local_dt.get('year')),
+                    ee.Number(local_dt.get('month')),
+                    ee.Number(local_dt.get('day'))
                 )
+
+                utc_start = local_midnight.advance(utc_offset_hours.multiply(-1), 'hour')
+                utc_end = utc_start.advance(1, 'day')
+
+                hourly_coll = ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY').filterDate(utc_start, utc_end)
+
                 et_reference_img = openet.refetgee.Daily.era5_land(hourly_coll).etsz(self.et_reference_band)
-                # et_reference_img = openet.refetgee.Daily.era5_land(hourly_coll, fill_edge_cells=2).etr
+                # et_reference_img = (
+                #     openet.refetgee.Daily.era5_land(hourly_coll, fill_edge_cells=2)
+                #     .etsz(self.et_reference_band)
+                # )
             else:
                 # Assume any other string source is an image collection ID (not an image ID)
                 et_reference_coll = (
