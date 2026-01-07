@@ -74,7 +74,7 @@ Example Notebooks
 Meteorology
 ===========
 
-The `GEE NLDAS hourly image collection <https://developers.google.com/earth-engine/datasets/catalog/NASA_NLDAS_FORA0125_H002>`__ is the default and only currently supported meteorology source for the hourly air temperature, vapor pressure, windspeed, and incoming short and longwave solar radiation.
+The `GEE NLDAS hourly image collection <https://developers.google.com/earth-engine/datasets/catalog/NASA_NLDAS_FORA0125_H002>`__ is the default meteorology source for the hourly air temperature, vapor pressure, windspeed, and incoming short and longwave solar radiation.
 
 Ancillary Datasets
 ==================

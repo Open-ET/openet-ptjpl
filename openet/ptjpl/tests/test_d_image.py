@@ -37,7 +37,10 @@ TEST_POINT = [-120.113, 36.336]
 
 
 def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8, water_mask=0):
-    # First construct a fake 'prepped' input image
+    # Construct a fake 'prepped' input image with bounded geometry
+    # Large bbox covering TEST_POINT and constant_image_value sampling area
+    test_geom = ee.Geometry.Rectangle([-125, -5, -100, 45], 'EPSG:4326', False)
+
     return (
         ee.Image.constant([albedo, emissivity, lst, ndvi, water_mask])
         .rename(['albedo', 'emissivity', 'lst', 'ndvi', 'water_mask'])
@@ -46,6 +49,7 @@ def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8, water_mask=0):
             'system:time_start': SCENE_TIME,
             'system:id': COLL_ID + SCENE_ID,
         })
+        .clip(test_geom)
     )
 
 
@@ -58,7 +62,7 @@ def default_image_args(
         ndvi=0.8,
         water_mask=0,
         ea_source=1000,
-        LWin_source=440,
+        lwin_source=440,
         rs_source=900,
         ta_source=315,
         windspeed_source=0,
@@ -82,7 +86,7 @@ def default_image_args(
             albedo=albedo, emissivity=emissivity, lst=lst, ndvi=ndvi, water_mask=water_mask,
         ),
         'ea_source': ea_source,
-        'LWin_source': LWin_source,
+        'lwin_source': lwin_source,
         'rs_source': rs_source,
         'ta_source': ta_source,
         'windspeed_source': windspeed_source,
@@ -110,7 +114,7 @@ def default_image_obj(
         ndvi=0.8,
         water_mask=0,
         ea_source=1000,
-        LWin_source=440,
+        lwin_source=440,
         rs_source=900,
         ta_source=315,
         windspeed_source=0,
@@ -136,7 +140,7 @@ def default_image_obj(
         ndvi=ndvi,
         water_mask=water_mask,
         ea_source=ea_source,
-        LWin_source=LWin_source,
+        lwin_source=lwin_source,
         rs_source=rs_source,
         ta_source=ta_source,
         windspeed_source=windspeed_source,
@@ -159,11 +163,11 @@ def default_image_obj(
 
 def test_Image_init_default_parameters():
     m = ptjpl.Image(default_image())
-    assert m.ea_source == 'NLDAS'
-    assert m.LWin_source == 'NLDAS'
-    assert m.rs_source == 'NLDAS'
-    assert m.ta_source == 'NLDAS'
-    assert m.windspeed_source == 'NLDAS'
+    assert m.ea_source == 'NLDAS2'
+    assert m.lwin_source == 'NLDAS2'
+    assert m.rs_source == 'NLDAS2'
+    assert m.ta_source == 'NLDAS2'
+    assert m.windspeed_source == 'NLDAS2'
     assert m.topt_source == 'projects/openet/assets/ptjpl/ancillary/Topt_from_max_convolved'
     assert m.faparmax_source == 'projects/openet/assets/ptjpl/ancillary/fAPARmax'
     # assert m.et_reference_source is None
@@ -267,21 +271,22 @@ def test_Image_ea_sources_exception():
 
 
 @pytest.mark.parametrize(
-    'LWin_source, xy, expected',
+    'lwin_source, xy, expected',
     [
         ['NLDAS', TEST_POINT, 441.6057],
         ['NLDAS2', TEST_POINT, 441.6057],
         ['ERA5LAND', TEST_POINT, 400.9422],
-        #['ERA5-LAND', TEST_POINT, 400.9422],
-        #['ERA5_LAND', TEST_POINT, 400.9422],
+        ['ERA5-LAND', TEST_POINT, 400.9422],
+        ['ERA5_LAND', TEST_POINT, 400.9422],
+        ['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 400.9422],
         # Check string/float constant values
         ['440', TEST_POINT, 440],
         [440, TEST_POINT, 440],
     ]
 )
-def test_Image_LWin_sources(LWin_source, xy, expected, tol=0.01):
+def test_Image_lwin_sources(lwin_source, xy, expected, tol=0.01):
     """Test getting LWin values for a single date at a real point"""
-    m = default_image_obj(LWin_source=LWin_source)
+    m = default_image_obj(lwin_source=lwin_source)
     # Uncomment to check values for other dates
     # m._start_date = ee.Date(start_date)
     # m._end_date =  m._start_date.advance(1, 'day')
@@ -289,9 +294,9 @@ def test_Image_LWin_sources(LWin_source, xy, expected, tol=0.01):
     assert abs(output['LWin'] - expected) <= tol
 
 
-def test_Image_LWin_sources_exception():
+def test_Image_lwin_sources_exception():
     with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(LWin_source='').LWin)
+        utils.getinfo(default_image_obj(lwin_source='').LWin)
 
 
 @pytest.mark.parametrize(
@@ -516,8 +521,15 @@ def test_Image_et_reference_properties():
     [
         ['IDAHO_EPSCOR/GRIDMET', 'etr', 1, TEST_POINT, 12.9],
         ['IDAHO_EPSCOR/GRIDMET', 'etr', 0.85, TEST_POINT, 12.9 * 0.85],
-        ['projects/openet/assets/reference_et/california/cimis/daily/v1',
-         'etr', 1, TEST_POINT, 11.7893],
+        [
+            'projects/openet/assets/reference_et/california/cimis/daily/v1',
+            'etr', 1, TEST_POINT, 11.7893
+        ],
+        ['ECMWF/ERA5_LAND/HOURLY', 'etr', 1, TEST_POINT, 10.864],
+        ['ECMWF/ERA5_LAND/HOURLY', 'eto', 1, TEST_POINT, 8.074],
+        ['ERA5LAND', 'etr', 1, TEST_POINT, 10.864],
+        # ['ERA5-LAND', 'etr', 1, TEST_POINT, 10.957],
+        # ['ERA5_LAND', 'etr', 1, TEST_POINT, 10.957],
         [10, 'FOO', 1, TEST_POINT, 10.0],
         [10, 'FOO', 0.85, TEST_POINT, 8.5],
     ]
