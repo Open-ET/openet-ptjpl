@@ -1,6 +1,6 @@
 [project]
 name = "openet-ptjpl"
-version = "0.4.2"
+version = "0.5.0"
 authors = [
     { name = "Gregory Halverson", email = "Gregory.H.Halverson@jpl.nasa.gov" },
     { name = "Josh Fisher", email = "joshbfisher@gmail.com" },
@@ -11,7 +11,7 @@ maintainers = [
 ]
 description = "Earth Engine implementation of the PTJPL model"
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 keywords = ["PTJPL", "OpenET", "Earth Engine", "Evapotranspiration", "Landsat"]
 license = {file = "LICENSE"}
 # license = {text = "Apache-2.0"}
@@ -23,6 +23,7 @@ classifiers = [
 dependencies = [
     "earthengine-api >= 1.5.2",
     "openet-core >= 0.7.0",
+    "openet-refet-gee >= 0.7.1",
     "python-dateutil",
 ]
 

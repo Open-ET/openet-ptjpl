@@ -1,5 +1,6 @@
 import ee
 import openet.core.common
+import openet.refetgee
 
 from openet.ptjpl.daylight_hours import sha_deg_from_doy_lat, sunrise_from_sha, daylight_from_sha
 from . import landsat
@@ -287,14 +288,26 @@ class Image:
             #   i.e. ee.ee_types.isNumber(self.et_reference_source)
             et_reference_img = ee.Image.constant(self.et_reference_source)
         elif type(self.et_reference_source) is str:
-            # Assume a string source is a daily image collection ID (not an image ID)
-            #   and select the first image in the date range
-            et_reference_coll = (
-                ee.ImageCollection(self.et_reference_source)
-                .filterDate(self._start_date, self._end_date)
-                .select([self.et_reference_band])
-            )
-            et_reference_img = ee.Image(et_reference_coll.first())
+            if self.et_reference_source.upper() in [
+                'ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY'
+            ]:
+                hourly_coll = (
+                    ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY')
+                    .filterDate(self._start_date, self._end_date)
+                )
+                et_reference_img = (
+                    openet.refetgee.Daily.era5_land(hourly_coll, fill_edge_cells=2)
+                    .etsz(self.et_reference_band)
+                )
+            else:
+                # Assume any other string source is a daily image collection ID (not an image ID)
+                #   and select the first image in the date range
+                et_reference_coll = (
+                    ee.ImageCollection(self.et_reference_source)
+                    .filterDate(self._start_date, self._end_date)
+                    .select([self.et_reference_band])
+                )
+                et_reference_img = ee.Image(et_reference_coll.first())
             if self.et_reference_resample in ['bilinear', 'bicubic']:
                 et_reference_img = et_reference_img.resample(self.et_reference_resample)
         else:

@@ -517,8 +517,15 @@ def test_Image_et_reference_properties():
     [
         ['IDAHO_EPSCOR/GRIDMET', 'etr', 1, TEST_POINT, 12.9],
         ['IDAHO_EPSCOR/GRIDMET', 'etr', 0.85, TEST_POINT, 12.9 * 0.85],
-        ['projects/openet/assets/reference_et/california/cimis/daily/v1',
-         'etr', 1, TEST_POINT, 11.7893],
+        [
+            'projects/openet/assets/reference_et/california/cimis/daily/v1',
+            'etr', 1, TEST_POINT, 11.7893
+        ],
+        ['ECMWF/ERA5_LAND/HOURLY', 'etr', 1, TEST_POINT, 10.957],
+        ['ECMWF/ERA5_LAND/HOURLY', 'eto', 1, TEST_POINT, 8.115],
+        ['ERA5LAND', 'etr', 1, TEST_POINT, 10.957],
+        # ['ERA5-LAND', 'etr', 1, TEST_POINT, 10.957],
+        # ['ERA5_LAND', 'etr', 1, TEST_POINT, 10.957],
         [10, 'FOO', 1, TEST_POINT, 10.0],
         [10, 'FOO', 0.85, TEST_POINT, 8.5],
     ]
