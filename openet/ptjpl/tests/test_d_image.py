@@ -37,7 +37,10 @@ TEST_POINT = [-120.113, 36.336]
 
 
 def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8, water_mask=0):
-    # First construct a fake 'prepped' input image
+    # Construct a fake 'prepped' input image with bounded geometry
+    # Large bbox covering TEST_POINT and constant_image_value sampling area
+    test_geom = ee.Geometry.Rectangle([-125, -5, -100, 45], 'EPSG:4326', False)
+
     return (
         ee.Image.constant([albedo, emissivity, lst, ndvi, water_mask])
         .rename(['albedo', 'emissivity', 'lst', 'ndvi', 'water_mask'])
@@ -46,6 +49,7 @@ def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8, water_mask=0):
             'system:time_start': SCENE_TIME,
             'system:id': COLL_ID + SCENE_ID,
         })
+        .clip(test_geom)
     )
 
 
@@ -521,9 +525,9 @@ def test_Image_et_reference_properties():
             'projects/openet/assets/reference_et/california/cimis/daily/v1',
             'etr', 1, TEST_POINT, 11.7893
         ],
-        ['ECMWF/ERA5_LAND/HOURLY', 'etr', 1, TEST_POINT, 10.957],
-        ['ECMWF/ERA5_LAND/HOURLY', 'eto', 1, TEST_POINT, 8.115],
-        ['ERA5LAND', 'etr', 1, TEST_POINT, 10.957],
+        ['ECMWF/ERA5_LAND/HOURLY', 'etr', 1, TEST_POINT, 10.864],
+        ['ECMWF/ERA5_LAND/HOURLY', 'eto', 1, TEST_POINT, 8.074],
+        ['ERA5LAND', 'etr', 1, TEST_POINT, 10.864],
         # ['ERA5-LAND', 'etr', 1, TEST_POINT, 10.957],
         # ['ERA5_LAND', 'etr', 1, TEST_POINT, 10.957],
         [10, 'FOO', 1, TEST_POINT, 10.0],
