@@ -1,6 +1,6 @@
 import ee
 import openet.core.common
-# import openet.refetgee
+import openet.refetgee
 
 from openet.ptjpl.daylight_hours import sha_deg_from_doy_lat, sunrise_from_sha, daylight_from_sha
 from . import landsat
@@ -289,8 +289,7 @@ class Image:
                     ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY')
                     .filterDate(self.date, self.date.advance(1, 'day'))
                 )
-                et_reference_img = hourly_coll.first().select([0])
-                # et_reference_img = openet.refetgee.Daily.era5_land(hourly_coll).etsz(self.et_reference_band)
+                et_reference_img = openet.refetgee.Daily.era5_land(hourly_coll).etsz(self.et_reference_band)
                 # et_reference_img = openet.refetgee.Daily.era5_land(hourly_coll, fill_edge_cells=2).etr
             else:
                 # Assume any other string source is an image collection ID (not an image ID)
