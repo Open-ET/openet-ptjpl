@@ -38,13 +38,11 @@ class Image:
     def __init__(
             self,
             image,
-            ta_source='NLDAS',
-            ea_source='NLDAS',
-            windspeed_source='NLDAS',
-            rs_source='NLDAS',
-            # Switching to lower case capitalizations for lwin_source in v0.5.0
-            # Until then, the lower case parameter will be checked first
-            lwin_source='NLDAS',
+            ta_source='NLDAS2',
+            ea_source='NLDAS2',
+            windspeed_source='NLDAS2',
+            rs_source='NLDAS2',
+            lwin_source='NLDAS2',
             topt_source='projects/openet/assets/ptjpl/ancillary/Topt_from_max_convolved',
             faparmax_source='projects/openet/assets/ptjpl/ancillary/fAPARmax',
             latitude=None,
@@ -60,16 +58,16 @@ class Image:
             A "prepped" PT-JPL input image.
             Bands: 'albedo', 'emissivity', 'ndvi', 'lst', 'water_mask'.
             Properties: 'system:index', 'system:time_start'.
-        ta_source : {'ERA5LAND', 'NLDAS', 'RTMA'}, optional
-            Air temperature source keyword (the default is 'NLDAS').
-        ea_source : {'ERA5LAND', 'NLDAS', 'RTMA'}, optional
-            Actual vapor pressure source keyword (the default is 'NLDAS').
-        windspeed_source : {'ERA5LAND', 'NLDAS', 'RTMA'}, optional
-            Wind speed source keyword (the default is 'NLDAS').
-        rs_source : {'ERA5LAND', 'NLDAS'}, optional
-            Incoming shortwave solar radiation source keyword (the default is 'NLDAS').
-        lwin_source : {'ERA5LAND', 'NLDAS'}, optional
-            Incoming longwave solar radiation source keyword (the default is 'NLDAS').
+        ta_source : {'ERA5LAND', 'NLDAS2', 'RTMA'}, optional
+            Air temperature source keyword (the default is 'NLDAS2').
+        ea_source : {'ERA5LAND', 'NLDAS2', 'RTMA'}, optional
+            Actual vapor pressure source keyword (the default is 'NLDAS2').
+        windspeed_source : {'ERA5LAND', 'NLDAS2', 'RTMA'}, optional
+            Wind speed source keyword (the default is 'NLDAS2').
+        rs_source : {'ERA5LAND', 'NLDAS2'}, optional
+            Incoming shortwave solar radiation source keyword (the default is 'NLDAS2').
+        lwin_source : {'ERA5LAND', 'NLDAS2'}, optional
+            Incoming longwave solar radiation source keyword (the default is 'NLDAS2').
         topt_source : str, optional
             Optimal temperature source.
         faparmax_source : str, optional

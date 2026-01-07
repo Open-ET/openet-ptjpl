@@ -159,11 +159,11 @@ def default_image_obj(
 
 def test_Image_init_default_parameters():
     m = ptjpl.Image(default_image())
-    assert m.ea_source == 'NLDAS'
-    assert m.lwin_source == 'NLDAS'
-    assert m.rs_source == 'NLDAS'
-    assert m.ta_source == 'NLDAS'
-    assert m.windspeed_source == 'NLDAS'
+    assert m.ea_source == 'NLDAS2'
+    assert m.lwin_source == 'NLDAS2'
+    assert m.rs_source == 'NLDAS2'
+    assert m.ta_source == 'NLDAS2'
+    assert m.windspeed_source == 'NLDAS2'
     assert m.topt_source == 'projects/openet/assets/ptjpl/ancillary/Topt_from_max_convolved'
     assert m.faparmax_source == 'projects/openet/assets/ptjpl/ancillary/fAPARmax'
     # assert m.et_reference_source is None
