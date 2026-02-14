@@ -3,6 +3,7 @@ import logging
 import os
 
 import ee
+import google.oauth2.credentials
 import pytest
 
 
