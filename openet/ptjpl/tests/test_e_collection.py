@@ -1,5 +1,3 @@
-# import pprint
-
 import ee
 import pytest
 

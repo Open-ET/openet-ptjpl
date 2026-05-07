@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 import ee
 import pytest
@@ -12,7 +12,7 @@ import openet.ptjpl.utils as utils
 # TODO: Try moving to conftest and/or make a fixture
 SCENE_ID = 'LC08_044033_20170716'
 # SCENE_ID = 'LC08_042035_20150713'
-SCENE_DT = datetime.datetime.strptime(SCENE_ID[-8:], '%Y%m%d')
+SCENE_DT = datetime.strptime(SCENE_ID[-8:], '%Y%m%d')
 SCENE_DATE = SCENE_DT.strftime('%Y-%m-%d')
 SCENE_TIME = utils.millis(SCENE_DT)
 

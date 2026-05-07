@@ -1,7 +1,6 @@
 import copy
-import datetime
+from datetime import datetime, timedelta
 from importlib import metadata
-# import pprint
 
 from dateutil.relativedelta import relativedelta
 import ee
@@ -85,14 +84,11 @@ class Collection:
             self.model_args = model_args
         else:
             self.model_args = {}
+
         if filter_args is not None:
             self.filter_args = filter_args
         else:
             self.filter_args = {}
-        # if interp_args is not None:
-        #     self.interp_args = interp_args
-        # else:
-        #     self.interp_args = {}
 
         # Check reference ET parameters
         # CGM - These would probably be cleaner as try/excepts
@@ -145,8 +141,7 @@ class Collection:
                 not type(self.cloud_cover_max) is float and
                 not utils.is_number(self.cloud_cover_max)):
             raise TypeError('cloud_cover_max must be a number')
-        if (type(self.cloud_cover_max) is str and
-                utils.is_number(self.cloud_cover_max)):
+        if type(self.cloud_cover_max) is str and utils.is_number(self.cloud_cover_max):
             self.cloud_cover_max = float(self.cloud_cover_max)
         if self.cloud_cover_max < 0 or self.cloud_cover_max > 100:
             raise ValueError('cloud_cover_max must be in the range 0 to 100')
@@ -223,7 +218,7 @@ class Collection:
                 )
 
                 # TODO: Move this to a separate function (maybe in utils.py?)
-                #   since  it is identical for all the supported collections
+                #   since it is identical for all the supported collections
                 if (self.filter_args is None or
                         not isinstance(self.filter_args, dict) or
                         coll_id not in self.filter_args.keys()):
@@ -380,20 +375,20 @@ class Collection:
 
         # Adjust start/end dates based on t_interval
         # Increase the date range to fully include the time interval
-        start_dt = datetime.datetime.strptime(self.start_date, '%Y-%m-%d')
-        end_dt = datetime.datetime.strptime(self.end_date, '%Y-%m-%d')
+        start_dt = datetime.strptime(self.start_date, '%Y-%m-%d')
+        end_dt = datetime.strptime(self.end_date, '%Y-%m-%d')
         if t_interval.lower() == 'monthly':
-            start_dt = datetime.datetime(start_dt.year, start_dt.month, 1)
+            start_dt = datetime(start_dt.year, start_dt.month, 1)
             end_dt -= relativedelta(days=+1)
-            end_dt = datetime.datetime(end_dt.year, end_dt.month, 1)
+            end_dt = datetime(end_dt.year, end_dt.month, 1)
             end_dt += relativedelta(months=+1)
         start_date = start_dt.strftime('%Y-%m-%d')
         end_date = end_dt.strftime('%Y-%m-%d')
 
         # The start/end date for the interpolation include more days
         # (+/- interp_days) than are included in the reference ET collection
-        interp_start_dt = start_dt - datetime.timedelta(days=interp_days)
-        interp_end_dt = end_dt + datetime.timedelta(days=interp_days)
+        interp_start_dt = start_dt - timedelta(days=interp_days)
+        interp_end_dt = end_dt + timedelta(days=interp_days)
         interp_start_date = interp_start_dt.date().isoformat()
         interp_end_date = interp_end_dt.date().isoformat()
 
