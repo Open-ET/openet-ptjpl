@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 import ee
 import pytest
@@ -83,7 +83,7 @@ def test_is_number(input, expected):
 
 
 def test_millis():
-    assert utils.millis(datetime.datetime(2015, 7, 13)) == 1436745600000
+    assert utils.millis(datetime(2015, 7, 13)) == 1436745600000
 
 
 def test_valid_date():

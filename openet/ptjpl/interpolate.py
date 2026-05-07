@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 import logging
 
 from dateutil.relativedelta import relativedelta
@@ -123,20 +123,20 @@ def from_scene_et_fraction(
 
     # Adjust start/end dates based on t_interval
     # Increase the date range to fully include the time interval
-    start_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-    end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
     if t_interval.lower() == 'monthly':
-        start_dt = datetime.datetime(start_dt.year, start_dt.month, 1)
+        start_dt = datetime(start_dt.year, start_dt.month, 1)
         end_dt -= relativedelta(days=+1)
-        end_dt = datetime.datetime(end_dt.year, end_dt.month, 1)
+        end_dt = datetime(end_dt.year, end_dt.month, 1)
         end_dt += relativedelta(months=+1)
     start_date = start_dt.strftime('%Y-%m-%d')
     end_date = end_dt.strftime('%Y-%m-%d')
 
     # The start/end date for the interpolation include more days
     # (+/- interp_days) than are included in the ETr collection
-    interp_start_dt = start_dt - datetime.timedelta(days=interp_days)
-    interp_end_dt = end_dt + datetime.timedelta(days=interp_days)
+    interp_start_dt = start_dt - timedelta(days=interp_days)
+    interp_end_dt = end_dt + timedelta(days=interp_days)
     interp_start_date = interp_start_dt.date().isoformat()
     interp_end_date = interp_end_dt.date().isoformat()
 
@@ -596,20 +596,20 @@ def from_scene_et_actual(
 
     # Adjust start/end dates based on t_interval
     # Increase the date range to fully include the time interval
-    start_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-    end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
     if t_interval.lower() == 'monthly':
-        start_dt = datetime.datetime(start_dt.year, start_dt.month, 1)
+        start_dt = datetime(start_dt.year, start_dt.month, 1)
         end_dt -= relativedelta(days=+1)
-        end_dt = datetime.datetime(end_dt.year, end_dt.month, 1)
+        end_dt = datetime(end_dt.year, end_dt.month, 1)
         end_dt += relativedelta(months=+1)
     start_date = start_dt.strftime('%Y-%m-%d')
     end_date = end_dt.strftime('%Y-%m-%d')
 
     # The start/end date for the interpolation include more days
     # (+/- interp_days) than are included in the ETr collection
-    interp_start_dt = start_dt - datetime.timedelta(days=interp_days)
-    interp_end_dt = end_dt + datetime.timedelta(days=interp_days)
+    interp_start_dt = start_dt - timedelta(days=interp_days)
+    interp_end_dt = end_dt + timedelta(days=interp_days)
     interp_start_date = interp_start_dt.date().isoformat()
     interp_end_date = interp_end_dt.date().isoformat()
 

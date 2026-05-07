@@ -1,5 +1,5 @@
 import calendar
-import datetime
+from datetime import datetime
 import logging
 from time import sleep
 
@@ -66,7 +66,7 @@ def point_coll_value(coll, xy, scale=1):
         col_dict[k] = i + 4
         info_dict[k] = {}
     for row in output[1:]:
-        date = datetime.datetime.utcfromtimestamp(row[3] / 1000.0).strftime('%Y-%m-%d')
+        date = datetime.utcfromtimestamp(row[3] / 1000.0).strftime('%Y-%m-%d')
         for k, v in col_dict.items():
             info_dict[k][date] = row[col_dict[k]]
 
@@ -133,7 +133,7 @@ def millis(input_dt):
 def valid_date(date_str, date_fmt='%Y-%m-%d'):
     """Check if a datetime can be built from a date string and if it is valid"""
     try:
-        datetime.datetime.strptime(date_str, date_fmt)
+        datetime.strptime(date_str, date_fmt)
         return True
     except:
         return False
