@@ -83,6 +83,11 @@ def LWin(Ta_K, Ea_Pa):
     Returns
     -------
     :return: ee.Image Instantaneous incoming longwave radiation in watts per square meter
+
+    References
+    ----------
+    Verma et. al. (2016). Global Surface Net-Radiation at 5 km from MODIS Terra.
+    Remote Sens. 2016, 8(9), 739; https://doi.org/10.3390/rs8090739
     """
     # calculate atmospheric emissivity
     eta1 = Ea_Pa.divide(Ta_K).multiply(0.465)

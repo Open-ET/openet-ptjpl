@@ -70,9 +70,10 @@ class Image:
         rs_source : {'ERA5LAND', 'NLDAS2'}, str, optional
             Hourly incoming shortwave solar radiation source keyword. The default is 'NLDAS2'.
             If a custom source collection ID is used, the units must be W m-2.
-        lwin_source : {'ERA5LAND', 'NLDAS2'}, str, optional
+        lwin_source : {'ERA5LAND', 'NLDAS2', 'COMPUTED'}, str, optional
             Hourly incoming longwave solar radiation source keyword. The default is 'NLDAS2'.
             If a custom source collection ID is used, the units must be W m-2.
+            The "COMPUTED" option will derive the value from
         topt_source : str, optional
             Optimal temperature source.
         faparmax_source : str, optional
@@ -505,11 +506,6 @@ class Image:
         """Instantaneous outgoing shortwave radiation in watts per square meter"""
         return ptjpl.SWnet(self.SWin, self.SWout).rename(['SWnet']).set(self._properties)
 
-    # @lazy_property
-    # def LWin(self):
-    #     """Instantaneous incoming longwave radiation in watts per square meter"""
-    #     return ptjpl.LWin(self.Ta_K, self.Ea_Pa).rename(['LWin']).set(self._properties)
-
     @lazy_property
     def LWin(self):
         """Incoming longwave radiation in watts per square meter
@@ -530,6 +526,9 @@ class Image:
             lwin_img = ee.Image(self.lwin_source)
         elif not self.lwin_source:
             raise ValueError(f'lwin_source not set\n')
+        elif self.lwin_source.upper() in ['COMPUTED']:
+            # Compute incoming longwave from the air tempeature and vapor pressure
+            lwin_img = ptjpl.LWin(self.Ta_K, self.Ea_Pa).rename(['LWin']).set(self._properties)
         elif self.lwin_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY']:
             lwin_img = self.hourly_source_interpolate(
                 'ECMWF/ERA5_LAND/HOURLY', 'surface_thermal_radiation_downwards_hourly', self._date

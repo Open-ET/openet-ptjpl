@@ -386,6 +386,22 @@ def test_Image_lwin_source_custom(lwin_source, lwin_band, scene_time, xy, expect
     assert abs(output['LWin'] - expected) <= tol
 
 
+@pytest.mark.parametrize(
+    'lwin_source, ta_source, ea_source, xy, expected',
+    [
+        ['COMPUTED', 300, 1000, (-156.9, 20.85), 355.0],
+        ['COMPUTED', 300, 2000, (-156.9, 20.85), 385.6],
+        ['COMPUTED', 290, 1000, (-156.9, 20.85), 311.1],
+    ]
+)
+def test_Image_lwin_source_computed(lwin_source, ta_source, ea_source, xy, expected, tol=0.1):
+    """Test getting LWin values for a single date at a real point"""
+    m = default_image_obj(lwin_source=lwin_source, ta_source=ta_source, ea_source=ea_source)
+    # m._date = ee.Date(scene_time)
+    output = utils.point_image_value(ee.Image(m.LWin), xy, scale=30)
+    assert abs(output['LWin'] - expected) <= tol
+
+
 def test_Image_rs_sources_exception():
     with pytest.raises(ValueError):
         utils.getinfo(default_image_obj(rs_source='').rs)
