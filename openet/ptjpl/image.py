@@ -530,8 +530,11 @@ class Image:
             # Compute incoming longwave from the air tempeature and vapor pressure
             lwin_img = ptjpl.LWin(self.Ta_K, self.Ea_Pa).rename(['LWin']).set(self._properties)
         elif self.lwin_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY']:
+            # ERA5-Land solar images are the accumulation of the previous hour
+            # To compensate, shift the image date forward 30 minutes
             lwin_img = self.hourly_source_interpolate(
-                'ECMWF/ERA5_LAND/HOURLY', 'surface_thermal_radiation_downwards_hourly', self._date
+                'ECMWF/ERA5_LAND/HOURLY', 'surface_thermal_radiation_downwards_hourly',
+                self._date.advance(30, 'minute')
             )
             # Convert J m-2 to W m-2 hr-1
             lwin_img = lwin_img.divide(3600)
@@ -835,8 +838,11 @@ class Image:
         elif isinstance(self.rs_source, ee.computedobject.ComputedObject):
             rs_img = ee.Image(self.rs_source)
         elif self.rs_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY']:
+            # ERA5-Land solar images are the accumulation of the previous hour
+            # To compensate, shift the image date forward 30 minutes
             rs_img = self.hourly_source_interpolate(
-                'ECMWF/ERA5_LAND/HOURLY', 'surface_solar_radiation_downwards_hourly', self._date
+                'ECMWF/ERA5_LAND/HOURLY', 'surface_solar_radiation_downwards_hourly',
+                self._date.advance(30, 'minute')
             )
             # Convert J m-2 to W m-2 hr-1
             rs_img = rs_img.divide(3600)
