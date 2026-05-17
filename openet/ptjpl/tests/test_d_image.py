@@ -350,10 +350,15 @@ def test_Image_lwin_sources_exception():
     [
         ['NLDAS', TEST_POINT, 441.6057],
         ['NLDAS2', TEST_POINT, 441.6057],
-        ['ERA5LAND', TEST_POINT, 400.9422],
-        ['ERA5-LAND', TEST_POINT, 400.9422],
-        ['ERA5_LAND', TEST_POINT, 400.9422],
-        ['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 400.9422],
+        ['ERA5LAND', TEST_POINT, 407.8287],
+        ['ERA5-LAND', TEST_POINT, 407.8287],
+        ['ERA5_LAND', TEST_POINT, 407.8287],
+        ['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 407.8287],
+        # DEADBEEF - Old values without half hour shift in interpolation
+        # ['ERA5LAND', TEST_POINT, 400.9422],
+        # ['ERA5-LAND', TEST_POINT, 400.9422],
+        # ['ERA5_LAND', TEST_POINT, 400.9422],
+        # ['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 400.9422],
         # Check string/float constant values
         ['440', TEST_POINT, 440],
         [440, TEST_POINT, 440],
@@ -412,9 +417,15 @@ def test_Image_rs_sources_exception():
     [
         ['NLDAS', TEST_POINT, 903.40464],
         ['NLDAS2', TEST_POINT, 903.40464],
-        ['ERA5LAND', TEST_POINT, 874.73105],
+        ['ERA5LAND', TEST_POINT, 909.86302],
+        ['ERA5-LAND', TEST_POINT, 909.86302],
+        ['ERA5_LAND', TEST_POINT, 909.86302],
+        ['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 909.86302],
+        # DEADBEEF - Old values without half hour shift in interpolation
+        #['ERA5LAND', TEST_POINT, 874.73105],
         #['ERA5-LAND', TEST_POINT, 874.73105],
         #['ERA5_LAND', TEST_POINT, 874.73105],
+        #['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 874.73105],
         # Check string/float constant values
         ['900.0', TEST_POINT, 900.0],
         [900.0, TEST_POINT, 900.0],
