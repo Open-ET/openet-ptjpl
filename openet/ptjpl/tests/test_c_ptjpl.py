@@ -39,6 +39,24 @@ def test_Model_Rns_calculation(Rn, LAI, water_mask, expected, tol=0.001):
         assert abs(output['constant'] - expected) <= tol
 
 
+@pytest.mark.parametrize(
+    'Ta, Ea, expected',
+    [
+        [300, 1000, 355.0],
+        [300, 2000, 385.6],
+        [290, 1000, 311.1],
+    ]
+)
+def test_Model_LWin_calculation(Ta, Ea, expected, tol=0.1):
+    output = utils.constant_image_value(ptjpl.LWin(
+        Ta_K=ee.Image.constant(Ta), Ea_Pa=ee.Image.constant(Ea),
+    ))
+    if expected is None:
+        assert output['constant'] is None
+    else:
+        assert abs(output['constant'] - expected) <= tol
+
+
 # @pytest.mark.parametrize(
 #     'Rn, fIPAR, Rns, W, water_mask, expected',
 #     [

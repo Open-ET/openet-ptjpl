@@ -35,7 +35,12 @@ TEST_POINT = [-120.113, 36.336]
 
 
 def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8, water_mask=0):
-    # First construct a fake 'prepped' input image
+    # Construct a fake 'prepped' input image with bounded geometry
+    # Large bbox covering TEST_POINT and constant_image_value sampling area
+    # Setting xmin to -160 to support testing Hawaii meteorology collections
+    test_geom = ee.Geometry.Rectangle([-160, -5, -100, 45], 'EPSG:4326', False)
+    # test_geom = ee.Geometry.Rectangle([-125, -5, -100, 45], 'EPSG:4326', False)
+
     return (
         ee.Image.constant([albedo, emissivity, lst, ndvi, water_mask])
         .rename(['albedo', 'emissivity', 'lst', 'ndvi', 'water_mask'])
@@ -44,6 +49,7 @@ def default_image(albedo=0.2, emissivity=0.99, lst=300, ndvi=0.8, water_mask=0):
             'system:time_start': SCENE_TIME,
             'system:id': COLL_ID + SCENE_ID,
         })
+        .clip(test_geom)
     )
 
 
@@ -56,7 +62,7 @@ def default_image_args(
         ndvi=0.8,
         water_mask=0,
         ea_source=1000,
-        LWin_source=440,
+        lwin_source=440,
         rs_source=900,
         ta_source=315,
         windspeed_source=0,
@@ -74,13 +80,21 @@ def default_image_args(
         crop_pm_adjust_band=None,
         crop_type_source='USDA/NASS/CDL',
         crop_type_remap='CDL',
-        ):
+        ea_pair_band=None,
+        ea_sph_band=None,
+        lwin_band=None,
+        rs_band=None,
+        ta_band=None,
+        windspeed_band=None,
+        ta_units=None,
+):
     return {
         'image': default_image(
             albedo=albedo, emissivity=emissivity, lst=lst, ndvi=ndvi, water_mask=water_mask,
         ),
         'ea_source': ea_source,
-        'LWin_source': LWin_source,
+
+        'lwin_source': lwin_source,
         'rs_source': rs_source,
         'ta_source': ta_source,
         'windspeed_source': windspeed_source,
@@ -98,6 +112,13 @@ def default_image_args(
         'crop_pm_adjust_band': crop_pm_adjust_band,
         'crop_type_source': crop_type_source,
         'crop_type_remap': crop_type_remap,
+        'ea_pair_band': ea_pair_band,
+        'ea_sph_band': ea_sph_band,
+        'lwin_band': lwin_band,
+        'rs_band': rs_band,
+        'ta_band': ta_band,
+        'windspeed_band': windspeed_band,
+        'ta_units': ta_units,
     }
 
 
@@ -108,7 +129,7 @@ def default_image_obj(
         ndvi=0.8,
         water_mask=0,
         ea_source=1000,
-        LWin_source=440,
+        lwin_source=440,
         rs_source=900,
         ta_source=315,
         windspeed_source=0,
@@ -126,7 +147,14 @@ def default_image_obj(
         crop_pm_adjust_band=None,
         crop_type_source='USDA/NASS/CDL',
         crop_type_remap='CDL',
-        ):
+        ea_pair_band=None,
+        ea_sph_band=None,
+        lwin_band=None,
+        rs_band=None,
+        ta_band=None,
+        ta_units=None,
+        windspeed_band=None,
+):
     return ptjpl.Image(**default_image_args(
         albedo=albedo,
         emissivity=emissivity,
@@ -134,7 +162,7 @@ def default_image_obj(
         ndvi=ndvi,
         water_mask=water_mask,
         ea_source=ea_source,
-        LWin_source=LWin_source,
+        lwin_source=lwin_source,
         rs_source=rs_source,
         ta_source=ta_source,
         windspeed_source=windspeed_source,
@@ -152,16 +180,23 @@ def default_image_obj(
         crop_pm_adjust_band=crop_pm_adjust_band,
         crop_type_source=crop_type_source,
         crop_type_remap=crop_type_remap,
+        ea_pair_band=ea_pair_band,
+        ea_sph_band=ea_sph_band,
+        lwin_band=lwin_band,
+        rs_band=rs_band,
+        ta_band=ta_band,
+        ta_units=ta_units,
+        windspeed_band=windspeed_band,
     ))
 
 
 def test_Image_init_default_parameters():
     m = ptjpl.Image(default_image())
-    assert m.ea_source == 'NLDAS'
-    assert m.LWin_source == 'NLDAS'
-    assert m.rs_source == 'NLDAS'
-    assert m.ta_source == 'NLDAS'
-    assert m.windspeed_source == 'NLDAS'
+    assert m.ea_source == 'NLDAS2'
+    assert m.lwin_source == 'NLDAS2'
+    assert m.rs_source == 'NLDAS2'
+    assert m.ta_source == 'NLDAS2'
+    assert m.windspeed_source == 'NLDAS2'
     assert m.topt_source == 'projects/openet/assets/ptjpl/ancillary/Topt_from_max_convolved'
     assert m.faparmax_source == 'projects/openet/assets/ptjpl/ancillary/fAPARmax'
     # assert m.et_reference_source is None
@@ -223,8 +258,33 @@ def test_Image_init_variable_properties(variable):
         # ['NASA/NLDAS/FORA0125_H002', 'wind_v', SCENE_TIME, True, TEST_POINT, 0],
         # ERA5-Land
         ['ECMWF/ERA5_LAND/HOURLY', 'temperature_2m', SCENE_TIME, TEST_POINT, 310.9816],
+        [
+            'ECMWF/ERA5_LAND/HOURLY', 'surface_solar_radiation_downwards_hourly',
+            1718311989436, (-156.9, 20.85), 2826126.5574
+        ],
         # RTMA
         ['NOAA/NWS/RTMA', 'TMP', SCENE_TIME, TEST_POINT, 33.74725],
+        # Custom URMA Hawaii
+        [
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'SRAD_TCDC',
+            1718311989436, (-156.9, 20.85), 840.3584
+        ],
+        [
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'TMP',
+            1718311989436, (-156.9, 20.85), 23.4380
+        ],
+        [
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'WIND',
+            1718311989436, (-156.9, 20.85), 6.9156
+        ],
+        [
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'PRES',
+            1718311989436, (-156.9, 20.85), 95902.1405
+        ],
+        [
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'SPFH',
+            1718311989436, (-156.9, 20.85), 0.0132
+        ],
     ]
 )
 def test_Image_hourly_source_interpolate(coll_id, band, time, xy, expected, tol=0.0001):
@@ -234,12 +294,18 @@ def test_Image_hourly_source_interpolate(coll_id, band, time, xy, expected, tol=
     assert abs(output[band] - expected) <= tol
 
 
+def test_Image_ea_sources_exception():
+    with pytest.raises(ValueError):
+        utils.getinfo(default_image_obj(ea_source='').ea)
+
+
 @pytest.mark.parametrize(
     'ea_source, xy, expected',
     [
         ['NLDAS', TEST_POINT, 1012.1425],
         ['NLDAS2', TEST_POINT, 1012.1425],
         ['ERA5LAND', TEST_POINT, 1080.6605],
+        ['ERA5LAND', (-156.9, 20.85), 2239.8538],
         #['ERA5-LAND', TEST_POINT, 1080.6605],
         #['ERA5_LAND', TEST_POINT, 1080.6605],
         ['RTMA', TEST_POINT, 1236.5126],
@@ -252,43 +318,98 @@ def test_Image_ea_sources(ea_source, xy, expected, tol=0.01):
     """Test getting Ea values for a single date at a real point"""
     m = default_image_obj(ea_source=ea_source)
     # Uncomment to check values for other dates
-    # m._start_date = ee.Date(start_date)
-    # m._end_date =  m._start_date.advance(1, 'day')
+    # m._date = ee.Date(start_date)
     output = utils.point_image_value(ee.Image(m.ea), xy, scale=30)
     assert abs(output['ea'] - expected) <= tol
 
 
-def test_Image_ea_sources_exception():
+@pytest.mark.parametrize(
+    'ea_source, pair_band, sph_band, scene_time, xy, expected',
+    [
+        [
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'PRES', 'SPFH',
+            1718311989436, (-156.9, 20.85), 2093.4206
+        ],
+    ]
+)
+def test_Image_ea_source_custom(ea_source, pair_band, sph_band, scene_time, xy, expected, tol=0.1):
+    """Test getting ea values for a single date at a real point"""
+    m = default_image_obj(ea_source=ea_source, ea_pair_band=pair_band, ea_sph_band=sph_band)
+    m._date = ee.Date(scene_time)
+    output = utils.point_image_value(ee.Image(m.ea), xy, scale=30)
+    assert abs(output['ea'] - expected) <= tol
+    
+
+def test_Image_lwin_sources_exception():
     with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(ea_source='').ea)
+        utils.getinfo(default_image_obj(lwin_source='').LWin)
 
 
 @pytest.mark.parametrize(
-    'LWin_source, xy, expected',
+    'lwin_source, xy, expected',
     [
         ['NLDAS', TEST_POINT, 441.6057],
         ['NLDAS2', TEST_POINT, 441.6057],
-        ['ERA5LAND', TEST_POINT, 400.9422],
-        #['ERA5-LAND', TEST_POINT, 400.9422],
-        #['ERA5_LAND', TEST_POINT, 400.9422],
+        ['ERA5LAND', TEST_POINT, 407.8287],
+        ['ERA5-LAND', TEST_POINT, 407.8287],
+        ['ERA5_LAND', TEST_POINT, 407.8287],
+        ['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 407.8287],
+        # DEADBEEF - Old values without half hour shift in interpolation
+        # ['ERA5LAND', TEST_POINT, 400.9422],
+        # ['ERA5-LAND', TEST_POINT, 400.9422],
+        # ['ERA5_LAND', TEST_POINT, 400.9422],
+        # ['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 400.9422],
         # Check string/float constant values
         ['440', TEST_POINT, 440],
         [440, TEST_POINT, 440],
     ]
 )
-def test_Image_LWin_sources(LWin_source, xy, expected, tol=0.01):
+def test_Image_lwin_sources(lwin_source, xy, expected, tol=0.01):
     """Test getting LWin values for a single date at a real point"""
-    m = default_image_obj(LWin_source=LWin_source)
+    m = default_image_obj(lwin_source=lwin_source)
     # Uncomment to check values for other dates
-    # m._start_date = ee.Date(start_date)
-    # m._end_date =  m._start_date.advance(1, 'day')
+    # m._date = ee.Date(start_date)
     output = utils.point_image_value(ee.Image(m.LWin), xy, scale=30)
     assert abs(output['LWin'] - expected) <= tol
 
 
-def test_Image_LWin_sources_exception():
+@pytest.mark.parametrize(
+    'lwin_source, lwin_band, scene_time, xy, expected',
+    [
+        [
+            # URMA collection doesn't have LWin, so read Rs for testing
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'SRAD_TCDC',
+            1718311989436, (-156.9, 20.85), 839.8910
+        ],
+    ]
+)
+def test_Image_lwin_source_custom(lwin_source, lwin_band, scene_time, xy, expected, tol=0.1):
+    """Test getting LWin values for a single date at a real point"""
+    m = default_image_obj(lwin_source=lwin_source, lwin_band=lwin_band)
+    m._date = ee.Date(scene_time)
+    output = utils.point_image_value(ee.Image(m.LWin), xy, scale=30)
+    assert abs(output['LWin'] - expected) <= tol
+
+
+@pytest.mark.parametrize(
+    'lwin_source, ta_source, ea_source, xy, expected',
+    [
+        ['COMPUTED', 300, 1000, (-156.9, 20.85), 355.0],
+        ['COMPUTED', 300, 2000, (-156.9, 20.85), 385.6],
+        ['COMPUTED', 290, 1000, (-156.9, 20.85), 311.1],
+    ]
+)
+def test_Image_lwin_source_computed(lwin_source, ta_source, ea_source, xy, expected, tol=0.1):
+    """Test getting LWin values for a single date at a real point"""
+    m = default_image_obj(lwin_source=lwin_source, ta_source=ta_source, ea_source=ea_source)
+    # m._date = ee.Date(scene_time)
+    output = utils.point_image_value(ee.Image(m.LWin), xy, scale=30)
+    assert abs(output['LWin'] - expected) <= tol
+
+
+def test_Image_rs_sources_exception():
     with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(LWin_source='').LWin)
+        utils.getinfo(default_image_obj(rs_source='').rs)
 
 
 @pytest.mark.parametrize(
@@ -296,9 +417,15 @@ def test_Image_LWin_sources_exception():
     [
         ['NLDAS', TEST_POINT, 903.40464],
         ['NLDAS2', TEST_POINT, 903.40464],
-        ['ERA5LAND', TEST_POINT, 874.73105],
+        ['ERA5LAND', TEST_POINT, 909.86302],
+        ['ERA5-LAND', TEST_POINT, 909.86302],
+        ['ERA5_LAND', TEST_POINT, 909.86302],
+        ['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 909.86302],
+        # DEADBEEF - Old values without half hour shift in interpolation
+        #['ERA5LAND', TEST_POINT, 874.73105],
         #['ERA5-LAND', TEST_POINT, 874.73105],
         #['ERA5_LAND', TEST_POINT, 874.73105],
+        #['ECMWF/ERA5_LAND/HOURLY', TEST_POINT, 874.73105],
         # Check string/float constant values
         ['900.0', TEST_POINT, 900.0],
         [900.0, TEST_POINT, 900.0],
@@ -308,16 +435,32 @@ def test_Image_rs_sources(rs_source, xy, expected, tol=0.0001):
     """Test getting Ta values for a single date at a real point"""
     m = default_image_obj(rs_source=rs_source)
     # Uncomment to check values for other dates
-    # m._start_date = ee.Date(start_date)
-    # m._end_date =  m._start_date.advance(1, 'day')
+    # m._date = ee.Date(start_date)
     output = utils.point_image_value(ee.Image(m.rs), xy, scale=30)
     assert abs(output['rs'] - expected) <= tol
 
 
-def test_Image_rs_sources_exception():
-    with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(rs_source='').rs)
+@pytest.mark.parametrize(
+    'rs_source, rs_band, scene_time, xy, expected',
+    [
+        [
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'SRAD_TCDC',
+            1718311989436, (-156.9, 20.85), 839.8910
+        ],
+    ]
+)
+def test_Image_rs_source_custom(rs_source, rs_band, scene_time, xy, expected, tol=0.1):
+    """Test getting Rs values for a single date at a real point"""
+    m = default_image_obj(rs_source=rs_source, rs_band=rs_band)
+    m._date = ee.Date(scene_time)
+    output = utils.point_image_value(ee.Image(m.rs), xy, scale=30)
+    assert abs(output['rs'] - expected) <= tol
+    
 
+def test_Image_ta_sources_exception():
+    with pytest.raises(ValueError):
+        utils.getinfo(default_image_obj(ta_source='').ta)
+        
 
 @pytest.mark.parametrize(
     'ta_source, xy, expected',
@@ -337,15 +480,31 @@ def test_Image_ta_sources(ta_source, xy, expected, tol=0.0001):
     """Test getting Ta values for a single date at a real point"""
     m = default_image_obj(ta_source=ta_source)
     # Uncomment to check values for other dates
-    # m._start_date = ee.Date(start_date)
-    # m._end_date =  m._start_date.advance(1, 'day')
+    # m._date = ee.Date(start_date)
     output = utils.point_image_value(ee.Image(m.ta), xy, scale=30)
     assert abs(output['Ta'] - expected) <= tol
 
 
-def test_Image_ta_sources_exception():
+@pytest.mark.parametrize(
+    'ta_source, ta_band, ta_units, scene_time, xy, expected',
+    [
+        [
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'TMP', 'C',
+            1718311989436, (-156.9, 20.9), 299.3262
+        ],
+    ]
+)
+def test_Image_ta_source_custom(ta_source, ta_band, ta_units, scene_time, xy, expected, tol=0.1):
+    """Test getting Ta values for a single date at a real point"""
+    m = default_image_obj(ta_source=ta_source, ta_band=ta_band, ta_units=ta_units)
+    m._date = ee.Date(scene_time)
+    output = utils.point_image_value(ee.Image(m.ta), xy, scale=1000)
+    assert abs(output['Ta'] - expected) <= tol
+
+
+def test_Image_windspeed_sources_exception():
     with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(ta_source='').ta)
+        utils.getinfo(default_image_obj(windspeed_source='').U)
 
 
 @pytest.mark.parametrize(
@@ -366,15 +525,32 @@ def test_Image_windspeed_sources(windspeed_source, xy, expected, tol=0.0001):
     """Test getting Ta values for a single date at a real point"""
     m = default_image_obj(windspeed_source=windspeed_source)
     # Uncomment to check values for other dates
-    # m._start_date = ee.Date(start_date)
-    # m._end_date =  m._start_date.advance(1, 'day')
+    # m._date = ee.Date(start_date)
     output = utils.point_image_value(ee.Image(m.U), xy, scale=30)
     assert abs(output['U'] - expected) <= tol
 
 
-def test_Image_windspeed_sources_exception():
+@pytest.mark.parametrize(
+    'windspeed_source, windspeed_band, scene_time, xy, expected',
+    [
+        [
+            'projects/openet/assets/meteorology/urma/hawaii/hourly', 'WIND',
+            1718311989436, (-156.9, 20.85), 7.0
+        ],
+    ]
+)
+def test_Image_windspeed_source_custom(windspeed_source, windspeed_band,
+                                       scene_time, xy, expected, tol=0.1):
+    """Test getting U values for a single date at a real point"""
+    m = default_image_obj(windspeed_source=windspeed_source, windspeed_band=windspeed_band)
+    m._date = ee.Date(scene_time)
+    output = utils.point_image_value(ee.Image(m.U), xy, scale=1000)
+    assert abs(output['U'] - expected) <= tol
+    
+
+def test_Image_topt_sources_exception():
     with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(windspeed_source='').U)
+        utils.getinfo(default_image_obj(topt_source='').Topt)
 
 
 @pytest.mark.parametrize(
@@ -407,9 +583,9 @@ def test_Image_topt_floor(topt_source=15, ta_source=40, tol=0.001):
     assert abs(output['Topt'] - ta_source) <= tol
 
 
-def test_Image_topt_sources_exception():
+def test_Image_faparmax_sources_exception():
     with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(topt_source='').Topt)
+        utils.getinfo(default_image_obj(faparmax_source='').fAPARmax)
 
 
 @pytest.mark.parametrize(
@@ -434,11 +610,6 @@ def test_Image_faparmax_sources(faparmax_source, xy, expected, tol=0.0001):
     # m._end_date =  m._start_date.advance(1, 'day')
     output = utils.point_image_value(ee.Image(m.fAPARmax), xy)
     assert abs(output['fAPARmax'] - expected) <= tol
-
-
-def test_Image_faparmax_sources_exception():
-    with pytest.raises(ValueError):
-        utils.getinfo(default_image_obj(faparmax_source='').fAPARmax)
 
 
 # TODO: Add tests for all the added properties
@@ -513,8 +684,15 @@ def test_Image_et_reference_properties():
     [
         ['IDAHO_EPSCOR/GRIDMET', 'etr', 1, TEST_POINT, 12.9],
         ['IDAHO_EPSCOR/GRIDMET', 'etr', 0.85, TEST_POINT, 12.9 * 0.85],
-        ['projects/openet/assets/reference_et/california/cimis/daily/v1',
-         'etr', 1, TEST_POINT, 11.7893],
+        [
+            'projects/openet/assets/reference_et/california/cimis/daily/v1',
+            'etr', 1, TEST_POINT, 11.7893
+        ],
+        ['ECMWF/ERA5_LAND/HOURLY', 'etr', 1, TEST_POINT, 10.879],
+        ['ECMWF/ERA5_LAND/HOURLY', 'eto', 1, TEST_POINT, 8.081],
+        ['ERA5LAND', 'etr', 1, TEST_POINT, 10.879],
+        ['ERA5-LAND', 'etr', 1, TEST_POINT, 10.879],
+        ['ERA5_LAND', 'etr', 1, TEST_POINT, 10.879],
         [10, 'FOO', 1, TEST_POINT, 10.0],
         [10, 'FOO', 0.85, TEST_POINT, 8.5],
     ]
@@ -523,7 +701,7 @@ def test_Image_et_reference_sources(source, band, factor, xy, expected, tol=0.00
     """Test getting reference ET values for a single date at a real point"""
     output = utils.point_image_value(default_image_obj(
         et_reference_source=source, et_reference_band=band,
-        et_reference_factor=factor).et_reference, xy)
+        et_reference_factor=factor).et_reference, xy, scale=30)
     assert abs(output['et_reference'] - expected) <= tol
 
 

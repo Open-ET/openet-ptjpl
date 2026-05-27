@@ -1,5 +1,6 @@
 import ee
 import openet.core.common
+import openet.refetgee
 
 from openet.ptjpl.daylight_hours import sha_deg_from_doy_lat, sunrise_from_sha, daylight_from_sha
 from . import landsat
@@ -37,18 +38,18 @@ class Image:
     def __init__(
             self,
             image,
-            ta_source='NLDAS',
-            ea_source='NLDAS',
-            windspeed_source='NLDAS',
-            rs_source='NLDAS',
-            LWin_source='NLDAS',
+            ta_source='NLDAS2',
+            ea_source='NLDAS2',
+            windspeed_source='NLDAS2',
+            rs_source='NLDAS2',
+            lwin_source='NLDAS2',
             topt_source='projects/openet/assets/ptjpl/ancillary/Topt_from_max_convolved',
             faparmax_source='projects/openet/assets/ptjpl/ancillary/fAPARmax',
             latitude=None,
             longitude=None,
             floor_Topt=True,
             **kwargs
-            ):
+    ):
         """Construct a generic PT-JPL Image
 
         Parameters
@@ -57,16 +58,22 @@ class Image:
             A "prepped" PT-JPL input image.
             Bands: 'albedo', 'emissivity', 'ndvi', 'lst', 'water_mask'.
             Properties: 'system:index', 'system:time_start'.
-        ta_source : {'ERA5LAND', 'NLDAS', 'RTMA'}, optional
-            Air temperature source keyword (the default is 'NLDAS').
-        ea_source : {'ERA5LAND', 'NLDAS', 'RTMA'}, optional
-            Actual vapor pressure source keyword (the default is 'NLDAS').
-        windspeed_source : {'ERA5LAND', 'NLDAS', 'RTMA'}, optional
-            Wind speed source keyword (the default is 'NLDAS').
-        rs_source : {'ERA5LAND', 'NLDAS'}, optional
-            Incoming shortwave solar radiation source keyword (the default is 'NLDAS').
-        LWin_source : {'ERA5LAND', 'NLDAS'}, optional
-            Incoming longwave solar radiation source keyword (the default is 'NLDAS').
+        ta_source : {'ERA5LAND', 'NLDAS2', 'RTMA'}, str, optional
+            Hourly air temperature source keyword. The default is 'NLDAS2'.
+            If a custom source collection ID is used, the units must be set
+            using the ta_units keyword argument.
+        ea_source : {'ERA5LAND', 'NLDAS2', 'RTMA'}, str, optional
+            Hourly actual vapor pressure source keyword. The default is 'NLDAS2'.
+        windspeed_source : {'ERA5LAND', 'NLDAS2', 'RTMA'}, str, optional
+            Hourly wind speed source keyword. The default is 'NLDAS2'.
+            If a custom source collection ID is used, the units must be m s-1.
+        rs_source : {'ERA5LAND', 'NLDAS2'}, str, optional
+            Hourly incoming shortwave solar radiation source keyword. The default is 'NLDAS2'.
+            If a custom source collection ID is used, the units must be W m-2.
+        lwin_source : {'ERA5LAND', 'NLDAS2', 'COMPUTED'}, str, optional
+            Hourly incoming longwave solar radiation source keyword. The default is 'NLDAS2'.
+            If a custom source collection ID is used, the units must be W m-2.
+            The "COMPUTED" option will derive the value from
         topt_source : str, optional
             Optimal temperature source.
         faparmax_source : str, optional
@@ -93,6 +100,33 @@ class Image:
             et_reference_resample : {'nearest', 'bilinear', 'bicubic', None}
                 Reference ET resampling.  The default is None which is
                 equivalent to nearest neighbor resampling.
+            ta_band : str
+                Band containing the air temperature values in the 'ta_source' collection.
+                Must be set if a custom source collection is used.
+            ta_units : {'K', 'C'}
+                Air temperature units of the 'ta_source' collection.
+                Must be set if a custom source collection is used.
+            ea_pair_band : str
+                Band containing the air pressure values in the 'source' collection
+                that will be used for computing vapor pressure.
+                Values must be in units of "Pa".
+                Must be set if a custom source collection is used.
+            ea_sph_band : str
+                Band containing the specific humidity values in the 'source' collection
+                that will be used for computing vapor pressure.
+                Must be set if a custom source collection is used.
+            windspeed_band : str
+                Band containing the wind speed values in the 'windspeed_source' collection.
+                Values must be in units of "m s-1".
+                Must be set if a custom source collection is used.
+            rs_band : str
+                Band containing the incoming shortwave radiation values in the 'rs_source'
+                collection.  Values must be in units of "W m-2".
+                Must be set if a custom source collection is used.
+            lwin_band : str
+                Band containing the incoming longwave radiation values in the 'lwin_source'
+                collection. Values must be in units of "W m-2".
+                Must be set if a custom source collection is used.
 
         """
         self.image = ee.Image(image)
@@ -137,11 +171,42 @@ class Image:
         # Model input parameters
         self.ea_source = ea_source
         self.rs_source = rs_source
-        self.LWin_source = LWin_source
+        self.lwin_source = lwin_source
         self.ta_source = ta_source
         self.windspeed_source = windspeed_source
         self.topt_source = topt_source
         self.faparmax_source = faparmax_source
+
+        # Custom meteorology source band names
+        try:
+            self.ea_pair_band = kwargs['ea_pair_band']
+        except:
+            self.ea_pair_band = None
+        try:
+            self.ea_sph_band = kwargs['ea_sph_band']
+        except:
+            self.ea_sph_band = None
+        try:
+            self.rs_band = kwargs['rs_band']
+        except:
+            self.rs_band = None
+        try:
+            self.lwin_band = kwargs['lwin_band']
+        except:
+            self.lwin_band = None
+        try:
+            self.ta_band = kwargs['ta_band']
+        except:
+            self.ta_band = None
+        try:
+            self.windspeed_band = kwargs['windspeed_band']
+        except:
+            self.windspeed_band = None
+
+        try:
+            self.ta_units = kwargs['ta_units']
+        except:
+            self.ta_units = None
 
         # PM Crop Adjust
         try:
@@ -280,13 +345,39 @@ class Image:
             #   i.e. ee.ee_types.isNumber(self.et_reference_source)
             et_reference_img = ee.Image.constant(self.et_reference_source)
         elif type(self.et_reference_source) is str:
-            # Assume a string source is an image collection ID (not an image ID)
-            et_reference_coll = (
-                ee.ImageCollection(self.et_reference_source)
-                .filterDate(self._start_date, self._end_date)
-                .select([self.et_reference_band])
-            )
-            et_reference_img = ee.Image(et_reference_coll.first())
+            if self.et_reference_source.upper() in [
+                'ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY'
+            ]:
+                # Get UTC offset from image centroid longitude (hours = lon / 15)
+                # approximate filter ERA5-Land (UTC) for the local day
+                centroid_lon = ee.Number(
+                    self.image.geometry().centroid(1).coordinates().get(0)
+                )
+
+                utc_offset_hours = centroid_lon.divide(15).round()
+
+                local_dt = self.date.advance(utc_offset_hours, 'hour')
+
+                local_midnight = ee.Date.fromYMD(
+                    ee.Number(local_dt.get('year')),
+                    ee.Number(local_dt.get('month')),
+                    ee.Number(local_dt.get('day'))
+                )
+
+                utc_start = local_midnight.advance(utc_offset_hours.multiply(-1), 'hour')
+                utc_end = utc_start.advance(1, 'day')
+
+                hourly_coll = ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY').filterDate(utc_start, utc_end)
+
+                et_reference_img = openet.refetgee.Daily.era5_land(hourly_coll).etsz(self.et_reference_band)
+            else:
+                # Assume any other string source is an image collection ID (not an image ID)
+                et_reference_coll = (
+                    ee.ImageCollection(self.et_reference_source)
+                    .filterDate(self._start_date, self._end_date)
+                    .select([self.et_reference_band])
+                )
+                et_reference_img = ee.Image(et_reference_coll.first())
             if self.et_reference_resample in ['bilinear', 'bicubic']:
                 et_reference_img = et_reference_img.resample(self.et_reference_resample)
         else:
@@ -415,11 +506,6 @@ class Image:
         """Instantaneous outgoing shortwave radiation in watts per square meter"""
         return ptjpl.SWnet(self.SWin, self.SWout).rename(['SWnet']).set(self._properties)
 
-    # @lazy_property
-    # def LWin(self):
-    #     """Instantaneous incoming longwave radiation in watts per square meter"""
-    #     return ptjpl.LWin(self.Ta_K, self.Ea_Pa).rename(['LWin']).set(self._properties)
-
     @lazy_property
     def LWin(self):
         """Incoming longwave radiation in watts per square meter
@@ -431,25 +517,34 @@ class Image:
         Raises
         ------
         ValueError
-            If `self.LWin_source` is not supported.
+            If `self.lwin_source` is not set.
 
         """
-        if utils.is_number(self.LWin_source):
-            lwin_img = ee.Image.constant(float(self.LWin_source))
-        elif isinstance(self.LWin_source, ee.computedobject.ComputedObject):
-            lwin_img = ee.Image(self.LWin_source)
-        elif self.LWin_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+        if utils.is_number(self.lwin_source):
+            lwin_img = ee.Image.constant(float(self.lwin_source))
+        elif isinstance(self.lwin_source, ee.computedobject.ComputedObject):
+            lwin_img = ee.Image(self.lwin_source)
+        elif not self.lwin_source:
+            raise ValueError(f'lwin_source not set\n')
+        elif self.lwin_source.upper() in ['COMPUTED']:
+            # Compute incoming longwave from the air tempeature and vapor pressure
+            lwin_img = ptjpl.LWin(self.Ta_K, self.Ea_Pa).rename(['LWin']).set(self._properties)
+        elif self.lwin_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY']:
+            # ERA5-Land solar images are the accumulation of the previous hour
+            # To compensate, shift the image date forward 30 minutes
             lwin_img = self.hourly_source_interpolate(
-                'ECMWF/ERA5_LAND/HOURLY', 'surface_thermal_radiation_downwards_hourly', self._date
+                'ECMWF/ERA5_LAND/HOURLY', 'surface_thermal_radiation_downwards_hourly',
+                self._date.advance(30, 'minute')
             )
             # Convert J m-2 to W m-2 hr-1
             lwin_img = lwin_img.divide(3600)
-        elif self.LWin_source.upper() in ['NLDAS', 'NLDAS2']:
+            lwin_img = utils.fill(lwin_img, pixels=2)
+        elif self.lwin_source.upper() in ['NLDAS', 'NLDAS2', 'NLDAS-2', 'NASA/NLDAS/FORA0125_H002']:
             lwin_img = self.hourly_source_interpolate(
                 'NASA/NLDAS/FORA0125_H002', 'longwave_radiation', self._date
             )
         else:
-            raise ValueError(f'Unsupported LWin source: {self.LWin_source}\n')
+            lwin_img = self.hourly_source_interpolate(self.lwin_source, self.lwin_band, self._date)
 
         return self.LST.multiply(0).add(lwin_img.resample(DOWNSAMPLE_METHOD)).rename(['LWin'])
 
@@ -492,12 +587,15 @@ class Image:
             wind_img = ee.Image.constant(float(self.windspeed_source))
         elif isinstance(self.windspeed_source, ee.computedobject.ComputedObject):
             wind_img = self.windspeed_source
-        elif self.windspeed_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+        elif not self.windspeed_source:
+            raise ValueError(f'windspeed_source not set\n')
+        elif self.windspeed_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY']:
             wind_coll_id = 'ECMWF/ERA5_LAND/HOURLY'
             wind_u = self.hourly_source_interpolate(wind_coll_id, 'u_component_of_wind_10m', self._date)
             wind_v = self.hourly_source_interpolate(wind_coll_id, 'v_component_of_wind_10m', self._date)
             wind_img = wind_u.pow(2).add(wind_v.pow(2)).sqrt()
-        elif self.windspeed_source.upper() in ['NLDAS', 'NLDAS2']:
+            wind_img = utils.fill(wind_img, pixels=2)
+        elif self.windspeed_source.upper() in ['NLDAS', 'NLDAS2', 'NLDAS-2', 'NASA/NLDAS/FORA0125_H002']:
             wind_coll_id = 'NASA/NLDAS/FORA0125_H002'
             wind_u = self.hourly_source_interpolate(wind_coll_id, 'wind_u', self._date)
             wind_v = self.hourly_source_interpolate(wind_coll_id, 'wind_v', self._date)
@@ -505,7 +603,9 @@ class Image:
         elif self.windspeed_source.upper() == 'RTMA':
             wind_img = self.hourly_source_interpolate('NOAA/NWS/RTMA', 'WIND', self._date)
         else:
-            raise ValueError(f'Invalid windspeed_source: {self.windspeed_source}\n')
+            wind_img = self.hourly_source_interpolate(
+                self.windspeed_source, self.windspeed_band, self._date
+            )
 
         return self.LST.multiply(0).add(wind_img.resample(DOWNSAMPLE_METHOD)).rename(['U'])
 
@@ -657,11 +757,11 @@ class Image:
         Raises
         ------
         ValueError
-            If `self.ea_source` is not supported.
+            If `self.ea_source` is not set.
 
         Notes
         -----
-        Using pressure component directly for NLDAS and RTMA instead of computing from elevation
+        Using pressure component directly for NLDAS2 and RTMA instead of computing from elevation
         pair_img = (
             ee.Image('USGS/SRTMGL1_003').multiply(-0.0065).add(293.0).divide(293.0)
             .pow(5.26).multiply(101.3).multiply(1000)
@@ -672,7 +772,9 @@ class Image:
             ea_img = ee.Image.constant(float(self.ea_source))
         elif isinstance(self.ea_source, ee.computedobject.ComputedObject):
             ea_img = ee.Image(self.ea_source)
-        elif self.ea_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+        elif not self.ea_source:
+            raise ValueError(f'ea_source not set\n')
+        elif self.ea_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY']:
             ea_coll_id = 'ECMWF/ERA5_LAND/HOURLY'
             tdew_img = (
                 self.hourly_source_interpolate(ea_coll_id, 'dewpoint_temperature_2m', self._date)
@@ -682,7 +784,8 @@ class Image:
                 tdew_img.add(237.3).pow(-1).multiply(tdew_img).multiply(17.27).exp().multiply(0.6108)
                 .multiply(1000)
             )
-        elif self.ea_source.upper() in ['NLDAS', 'NLDAS2']:
+            ea_img = utils.fill(ea_img, pixels=2)
+        elif self.ea_source.upper() in ['NLDAS', 'NLDAS2', 'NLDAS-2', 'NASA/NLDAS/FORA0125_H002']:
             # NLDAS air pressure is in units of Pa
             ea_coll_id = 'NASA/NLDAS/FORA0125_H002'
             sph_img = self.hourly_source_interpolate(ea_coll_id, 'specific_humidity', self._date)
@@ -695,7 +798,12 @@ class Image:
             pair_img = self.hourly_source_interpolate(ea_coll_id, 'PRES', self._date)
             ea_img = sph_img.multiply(0.378).add(0.622).pow(-1).multiply(sph_img).multiply(pair_img)
         else:
-            raise ValueError(f'Unsupported ea_source: {self.ea_source}\n')
+            # TODO: Add support for reading dewpoint temperature instead of specific humidity
+            # TODO: Add support for setting pressure units
+            # Pressure must be in units of Pa for now
+            sph_img = self.hourly_source_interpolate(self.ea_source, self.ea_sph_band, self._date)
+            pair_img = self.hourly_source_interpolate(self.ea_source, self.ea_pair_band, self._date)
+            ea_img = sph_img.multiply(0.378).add(0.622).pow(-1).multiply(sph_img).multiply(pair_img)
 
         return self.LST.multiply(0).add(ea_img.resample(DOWNSAMPLE_METHOD)).rename(['ea'])
 
@@ -720,25 +828,31 @@ class Image:
         Raises
         ------
         ValueError
-            If `self.rs_source` is not supported.
+            If `self.rs_source` is not set.
 
         """
         if utils.is_number(self.rs_source):
             rs_img = ee.Image.constant(float(self.rs_source))
+        elif not self.rs_source:
+            raise ValueError(f'rs_source not set\n')
         elif isinstance(self.rs_source, ee.computedobject.ComputedObject):
             rs_img = ee.Image(self.rs_source)
-        elif self.rs_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+        elif self.rs_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY']:
+            # ERA5-Land solar images are the accumulation of the previous hour
+            # To compensate, shift the image date forward 30 minutes
             rs_img = self.hourly_source_interpolate(
-                'ECMWF/ERA5_LAND/HOURLY', 'surface_solar_radiation_downwards_hourly', self._date
+                'ECMWF/ERA5_LAND/HOURLY', 'surface_solar_radiation_downwards_hourly',
+                self._date.advance(30, 'minute')
             )
             # Convert J m-2 to W m-2 hr-1
             rs_img = rs_img.divide(3600)
-        elif self.rs_source.upper() in ['NLDAS', 'NLDAS2']:
+            rs_img = utils.fill(rs_img, pixels=2)
+        elif self.rs_source.upper() in ['NLDAS', 'NLDAS2', 'NLDAS-2', 'NASA/NLDAS/FORA0125_H002']:
             rs_img = self.hourly_source_interpolate(
                 'NASA/NLDAS/FORA0125_H002', 'shortwave_radiation', self._date
             )
         else:
-            raise ValueError(f'Unsupported rs_source: {self.rs_source}\n')
+            rs_img = self.hourly_source_interpolate(self.rs_source, self.rs_band, self._date)
 
         # Resample to the Landsat LST grid
         return self.LST.multiply(0).add(rs_img.resample(DOWNSAMPLE_METHOD)).rename(['rs'])
@@ -754,23 +868,32 @@ class Image:
         Raises
         ------
         ValueError
-            If `self.ta_source` is not supported.
+            If `self.ta_source` is not set.
 
         """
         if utils.is_number(self.ta_source):
             ta_img = ee.Image.constant(float(self.ta_source))
         elif isinstance(self.ta_source, ee.computedobject.ComputedObject):
             ta_img = ee.Image(self.ta_source)
-        elif self.ta_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND']:
+        elif not self.ta_source:
+            raise ValueError(f'ta_source not set\n')
+        elif self.ta_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY']:
             ta_coll_id = 'ECMWF/ERA5_LAND/HOURLY'
             ta_img = self.hourly_source_interpolate(ta_coll_id, 'temperature_2m', self._date)
-        elif self.ta_source.upper() in ['NLDAS', 'NLDAS2']:
+            ta_img = utils.fill(ta_img, pixels=2)
+        elif self.ta_source.upper() in ['NLDAS', 'NLDAS2', 'NLDAS-2', 'NASA/NLDAS/FORA0125_H002']:
             ta_coll_id = 'NASA/NLDAS/FORA0125_H002'
             ta_img = self.hourly_source_interpolate(ta_coll_id, 'temperature', self._date).add(273.15)
         elif self.ta_source.upper() == 'RTMA':
             ta_img = self.hourly_source_interpolate('NOAA/NWS/RTMA', 'TMP', self._date).add(273.15)
         else:
-            raise ValueError(f'Unsupported ta_source: {self.ta_source}\n')
+            ta_img = self.hourly_source_interpolate(self.ta_source, self.ta_band, self._date)
+            if self.ta_units.lower() in ['c', 'celsius']:
+                ta_img = ta_img.add(273.15)
+            elif self.ta_units.lower() in ['k', 'kelvin']:
+                pass
+            else:
+                raise ValueError(f'unsupported ta_units: {self.ta_units}')
 
         # Resample to the Landsat LST grid
         return self.LST.multiply(0).add(ta_img.resample(DOWNSAMPLE_METHOD)).rename(['Ta'])
@@ -790,7 +913,6 @@ class Image:
         ee.Image
 
         """
-
         # TODO: Check if NLDAS data is average over trailing hour, instantaneous, something else.
         #   The date may need to be shifted depending.
         # interp_date = interp_date.advance(-0.5, 'hour')
