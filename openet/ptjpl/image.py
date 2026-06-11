@@ -949,9 +949,8 @@ class Image:
                self.topt_source.lower().startswith('users/'))):
             # Read the source as an image asset ID str
             topt_img = ee.Image(self.topt_source)
-        # elif isinstance(self.topt_source, computedobject.ComputedObject):
-        #     # Use the ee.Image() directly
-        #     topt_img = ee.Image(self.topt_source)
+        elif isinstance(self.topt_source, computedobject.ComputedObject):
+            topt_img = ee.Image(self.topt_source)
         else:
             raise ValueError(f'unsupported topt_source: {self.topt_source}')
 
@@ -1215,42 +1214,44 @@ class Image:
 
     @lazy_property
     def crop_mask(self):
-        # CGM - This is the crop list we are using to set when SIMS is included
-        #   in the ensemble.
-        # It is identical to the remap in ensemble_interpolate_asset_export.py
-        #   except that wetlands (87, 190, 195) are being included.
+        # Note: This crop list is slightly different than what is used in SIMS
+        # Wetlands (87, 190, 195) are being included
+        # Fallow/Idle (61) and Grassland/Pasture (176) are not included
         # TODO: This remap should probably be set from an external file
         return (
             self.crop_type.remap(
                 list(range(0, 255)),
-                [0, 1, 1, 1, 1, 1, 1, 0, 0, 0,
-                 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-                 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 0, 0, 0, 0, 0, 1, 1, 1, 1,
-                 1, 1, 1, 0, 1, 1, 1, 1, 1, 0,
-                 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 # 100
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 # 200
-                 1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-                 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1])
+                [
+                    # 0-99
+                    0, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                    0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 0, 0, 0, 0, 0, 1, 1, 1, 1,
+                    1, 1, 1, 0, 1, 1, 1, 1, 1, 0,
+                    0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    # 100-199
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+                    # 200-254
+                    0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1
+                ])
             .rename('crop_mask').set(self._properties)
         )
 
