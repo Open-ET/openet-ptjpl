@@ -950,7 +950,7 @@ class Image:
                self.topt_source.lower().startswith('users/'))):
             # Read the source as an image asset ID str
             topt_img = ee.Image(self.topt_source)
-        elif isinstance(self.topt_source, computedobject.ComputedObject):
+        elif isinstance(self.topt_source, ee.computedobject.ComputedObject):
             topt_img = ee.Image(self.topt_source)
         else:
             raise ValueError(f'unsupported topt_source: {self.topt_source}')
@@ -974,7 +974,7 @@ class Image:
                self.faparmax_source.lower().startswith('users/'))):
             # Read the source as an image asset ID str
             fAPARmax_img = ee.Image(self.faparmax_source)
-        # elif isinstance(self.faparmax_source, computedobject.ComputedObject):
+        # elif isinstance(self.faparmax_source, ee.computedobject.ComputedObject):
         #     # Use the ee.Image() directly
         #     fAPARmax_img = ee.Image(self.fAPARmax_source)
         else:
@@ -1207,7 +1207,7 @@ class Image:
             crop_type_img = crop_type_coll.mosaic()
             properties = properties.set('id', crop_type_coll.get('system:id'))
         # TODO: Add support for generic ee.Image and ee.ImageCollection sources
-        # elif isinstance(self.crop_type_source, computedobject.ComputedObject):
+        # elif isinstance(self.crop_type_source, ee.computedobject.ComputedObject):
         else:
             raise ValueError(f'unsupported crop_type_source: {self.crop_type_source}')
 
