@@ -73,7 +73,8 @@ class Image:
         lwin_source : {'ERA5LAND', 'NLDAS2', 'COMPUTED'}, str, optional
             Hourly incoming longwave solar radiation source keyword. The default is 'NLDAS2'.
             If a custom source collection ID is used, the units must be W m-2.
-            The "COMPUTED" option will derive the value from
+            The "COMPUTED" option will derive the value from the air temperature
+            and vapor pressure.
         topt_source : str, optional
             Optimal temperature source.
         faparmax_source : str, optional
@@ -527,7 +528,7 @@ class Image:
         elif not self.lwin_source:
             raise ValueError(f'lwin_source not set\n')
         elif self.lwin_source.upper() in ['COMPUTED']:
-            # Compute incoming longwave from the air tempeature and vapor pressure
+            # Compute incoming longwave from the air temperature and vapor pressure
             lwin_img = ptjpl.LWin(self.Ta_K, self.Ea_Pa).rename(['LWin']).set(self._properties)
         elif self.lwin_source.upper() in ['ERA5LAND', 'ERA5-LAND', 'ERA5_LAND', 'ECMWF/ERA5_LAND/HOURLY']:
             # ERA5-Land solar images are the accumulation of the previous hour
