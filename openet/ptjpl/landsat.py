@@ -262,19 +262,16 @@ def normalized_difference(image, b1_name, b2_name):
 def ndvi(landsat_image):
     """Normalized Difference Vegetation Index (NDVI)"""
     return normalized_difference(landsat_image, 'nir', 'red').rename(['ndvi'])
-    # return landsat_image.normalizedDifference(['nir', 'red']).rename(['ndvi'])
 
 
 def ndwi(landsat_image):
     """Normalized Difference Water Index (NDWI)"""
     return normalized_difference(landsat_image, 'green', 'nir').rename(['ndwi'])
-    # return landsat_image.normalizedDifference(['green', 'nir']).rename(['ndwi'])
 
 
 def mndwi(landsat_image):
     """Modified Normalized Difference Water Index (MNDWI)"""
     return normalized_difference(landsat_image, 'green', 'swir2').rename(['mndwi'])
-    # return landsat_image.normalizedDifference(['green', 'swir2']).rename(['mndwi'])
 
 
 def wri(landsat_image):
@@ -337,3 +334,66 @@ def water_mask(landsat_image, gsw_extent_flag=True):
     #   Not sure if this is necessary but it would be nice to be able to catch
     #   very obvious water that is in a new location not in the GSW layer
     # return ptjl_water_mask.add(qa_water_mask).add(gsw_mask).gte(2).rename(['water_mask'])
+
+
+# TODO: Move to openet.core
+# TODO: Consider adding support for setting some sort of "lst_source_index"
+#   parameter to allow for joining on a property other than "scene_id"
+def lst_source_image(lst_source, mask_image):
+    """Select the LST image from a source collection based on the scene_id
+
+    Parameters
+    ----------
+    lst_source : str
+        LST source collection ID.
+        Images in LST source collection must be single band.
+        Images must have a "scene_id" property with an upper case ID in the
+            system:index format (LXSS_PPPRRR_YYYYMMDD)
+        If a "scale_factor" property is present, it will be applied by multiplying
+    mask_image : ee.Image
+        Single Landsat image band with "system:index" property that will be
+        used for selecting target image in source collection.
+        Using a full image instead of the system:index itself so that the image
+        footprint/mask can be applied to the matched image.
+
+    Returns
+    -------
+    ee.Image
+
+    """
+    # Merging with an empty base image is needed so that an empty/masked image is
+    #   returned if the target scene_id is not present in the source collection
+    base_img = mask_image.multiply(0).selfMask().set({'lst_source_id': 'None'})
+
+    lst_image = ee.Image(
+        ee.ImageCollection(lst_source)
+        .filter(ee.Filter.eq('scene_id', mask_image.get('system:index')))
+        .select([0], ['lst'])
+        .map(lambda img: img.set({'lst_source_id': img.get('system:id')}))
+        .merge(ee.ImageCollection([base_img]))
+        .first()
+        .updateMask(mask_image.mask())
+    )
+    # # Could use the input LST as a fallback if the scene is missing from LST source
+    # #   instead of returning a masked image
+    # .merge(ee.ImageCollection([lst_image.set({'lst_source_id': self._id})]))
+
+    # Save the lst_source_id property since tscale_factor multiply call below drops it
+    lst_source_id = lst_image.get('lst_source_id')
+
+    # The OpenET LST images are scaled, so assume the image need to be unscaled,
+    #   but set a default scale_factor to 1
+    lst_scale_factor = (
+        ee.Dictionary({'scale_factor': lst_image.get('scale_factor')})
+        .combine({'scale_factor': 1.0}, overwrite=False)
+    )
+
+    return (
+        lst_image.multiply(ee.Number(lst_scale_factor.get('scale_factor')))
+        .rename(['lst'])
+        .set({
+            'system:index': mask_image.get('system:index'),
+            'lst_source_id': lst_source_id,
+            # 'scene_id': mask_image.get('system:index'),
+        })
+    )

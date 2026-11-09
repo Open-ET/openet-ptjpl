@@ -1031,7 +1031,11 @@ class Image:
         cloudmask_args : dict
             keyword arguments to pass through to cloud mask function
         kwargs : dict
-            Keyword arguments to pass through to Image init function
+            Keyword arguments to pass through to Image init function.
+            c2_lst_correct : boolean, optional
+                Apply the Landsat Collection 2 LST emissivity correction.
+            lst_source : str, optional
+                If lst_source is set, force c2_lst_correct to be False
 
         Returns
         -------
@@ -1091,8 +1095,10 @@ class Image:
 
         cloud_mask = openet.core.common.landsat_c2_sr_cloud_mask(sr_image, **cloudmask_args)
 
-        # Check if passing c2_lst_correct or soil_emis_coll_id arguments
-        if "c2_lst_correct" in kwargs.keys():
+        if ('lst_source' in kwargs.keys()) and kwargs['lst_source']:
+            # Force the LST correction flag to False if the LST source parameter is set
+            c2_lst_correct = False
+        elif "c2_lst_correct" in kwargs.keys():
             assert isinstance(kwargs['c2_lst_correct'], bool), "selection type must be a boolean"
             # Remove from kwargs since it is not a valid argument for Image init
             c2_lst_correct = kwargs.pop('c2_lst_correct')
@@ -1100,15 +1106,22 @@ class Image:
             c2_lst_correct = cls._C2_LST_CORRECT
 
         if c2_lst_correct:
-            lst = openet.core.common.landsat_c2_sr_lst_correct(sr_image, landsat.ndvi(prep_image))
+            lst_image = openet.core.common.landsat_c2_sr_lst_correct(sr_image)
+        elif ('lst_source' in kwargs.keys()) and kwargs['lst_source']:
+            # Use an LST image from a separate LST source collection
+            # Leaving param in kwargs for now so it will be written as an output property
+            # Can't use the LST band as the mask since it may have emissivity holes
+            lst_image = landsat.lst_source_image(
+                lst_source=kwargs['lst_source'], mask_image=sr_image.select(['SR_B3'])
+            )
         else:
-            lst = prep_image.select(['lst'])
+            lst_image = prep_image.select(['lst'])
 
         # Build the input image
         input_image = ee.Image([
             landsat.albedo_metric(prep_image),
             landsat.emissivity_metric(prep_image),
-            lst.rename(['lst']),
+            lst_image,
             landsat.ndvi(prep_image),
             landsat.water_mask(prep_image),
             #cloud_mask.Not(),
@@ -1116,10 +1129,12 @@ class Image:
 
         # Apply the cloud mask and add properties
         input_image = (
-            input_image.updateMask(cloud_mask)
-            .set({'system:index': sr_image.get('system:index'),
-                  'system:time_start': sr_image.get('system:time_start'),
-                  'system:id': sr_image.get('system:id'),
+            input_image
+            .updateMask(cloud_mask)
+            .set({
+                'system:index': sr_image.get('system:index'),
+                'system:time_start': sr_image.get('system:time_start'),
+                'system:id': sr_image.get('system:id'),
             })
         )
 

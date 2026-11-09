@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import ee
 import pytest
 
-import openet.ptjpl as ptjpl
+import openet.ptjpl as model
 import openet.ptjpl.utils as utils
 # TODO: import utils from openet.core
 # import openet.core.utils as utils
@@ -155,7 +155,7 @@ def default_image_obj(
         ta_units=None,
         windspeed_band=None,
 ):
-    return ptjpl.Image(**default_image_args(
+    return model.Image(**default_image_args(
         albedo=albedo,
         emissivity=emissivity,
         lst=lst,
@@ -191,7 +191,7 @@ def default_image_obj(
 
 
 def test_Image_init_default_parameters():
-    m = ptjpl.Image(default_image())
+    m = model.Image(default_image())
     assert m.ea_source == 'NLDAS2'
     assert m.lwin_source == 'NLDAS2'
     assert m.rs_source == 'NLDAS2'
@@ -210,7 +210,7 @@ def test_Image_init_default_parameters():
 
 # Todo: Break these up into separate functions?
 def test_Image_init_calculated_properties():
-    m = ptjpl.Image(default_image())
+    m = model.Image(default_image())
     assert utils.getinfo(m._time_start) == SCENE_TIME
     # assert m._scene_id.getInfo() == SCENE_ID
     # assert m._wrs2_tile.getInfo() == 'p{}r{}'.format(
@@ -218,7 +218,7 @@ def test_Image_init_calculated_properties():
 
 
 def test_Image_init_date_properties():
-    m = ptjpl.Image(default_image())
+    m = model.Image(default_image())
     assert utils.getinfo(m._date)['value'] == SCENE_TIME
     assert utils.getinfo(m._year) == int(SCENE_DATE.split('-')[0])
     assert utils.getinfo(m._month) == int(SCENE_DATE.split('-')[1])
@@ -231,7 +231,7 @@ def test_Image_init_date_properties():
 # def test_Image_init_scene_id_property():
 #     """Test that the system:index from a merged collection is parsed"""
 #     input_img = default_image()
-#     m = ptjpl.Image(input_img.set('system:index', '1_2_' + SCENE_ID))
+#     m = model.Image(input_img.set('system:index', '1_2_' + SCENE_ID))
 #     assert utils.getinfo(m._scene_id) == SCENE_ID
 
 
@@ -289,7 +289,7 @@ def test_Image_init_variable_properties(variable):
 )
 def test_Image_hourly_source_interpolate(coll_id, band, time, xy, expected, tol=0.0001):
     output = utils.point_image_value(
-        ptjpl.Image.hourly_source_interpolate(coll_id, band, ee.Date(time)), xy, scale=30
+        model.Image.hourly_source_interpolate(coll_id, band, ee.Date(time)), xy, scale=30
     )
     assert abs(output[band] - expected) <= tol
 
@@ -804,7 +804,7 @@ def test_Image_calculate_variables_valueerror():
 
 def test_Image_from_landsat_c2_sr_default_image():
     """Test that the classmethod is returning a class object"""
-    output = ptjpl.Image.from_landsat_c2_sr(
+    output = model.Image.from_landsat_c2_sr(
         ee.Image('LANDSAT/LC08/C02/T1_L2/LC08_038031_20130828')
         # 'LANDSAT/LC08/C02/T1_L2/LC08_038031_20130828'
     )
@@ -823,7 +823,7 @@ def test_Image_from_landsat_c2_sr_default_image():
 )
 def test_Image_from_landsat_c2_sr_landsat_image(image_id):
     """Test instantiating the class from a real Landsat images"""
-    output = utils.getinfo(ptjpl.Image.from_landsat_c2_sr(ee.Image(image_id)).NDVI)
+    output = utils.getinfo(model.Image.from_landsat_c2_sr(ee.Image(image_id)).NDVI)
     assert output['properties']['system:index'] == image_id.split('/')[-1]
 
 
@@ -831,7 +831,7 @@ def test_Image_from_landsat_c2_sr_exception():
     """Test instantiating the class for an invalid image ID"""
     with pytest.raises(Exception):
         # Intentionally using .getInfo() since utils.getinfo() might catch the exception
-        ptjpl.Image.from_landsat_c2_sr(ee.Image('FOO')).ndvi.getInfo()
+        model.Image.from_landsat_c2_sr(ee.Image('FOO')).ndvi.getInfo()
 
 
 def test_Image_from_landsat_c2_sr_scaling():
@@ -849,12 +849,12 @@ def test_Image_from_landsat_c2_sr_scaling():
 
     # LST correction and cloud score masking do not work with a constant image
     #   and must be explicitly set to False
-    output = utils.constant_image_value(ptjpl.Image.from_landsat_c2_sr(
+    output = utils.constant_image_value(model.Image.from_landsat_c2_sr(
         input_img, c2_lst_correct=False,
         cloudmask_args={'cloud_score_flag': False, 'filter_flag': False}).albedo)
     assert abs(output['albedo'] - 0.1) <= 0.01
 
-    output = utils.constant_image_value(ptjpl.Image.from_landsat_c2_sr(
+    output = utils.constant_image_value(model.Image.from_landsat_c2_sr(
         input_img, c2_lst_correct=False,
         cloudmask_args={'cloud_score_flag': False, 'filter_flag': False}).LST)
     assert abs(output['lst'] - 300) <= 0.1
@@ -862,7 +862,7 @@ def test_Image_from_landsat_c2_sr_scaling():
 
 def test_Image_from_landsat_c2_sr_cloud_mask_args():
     """Test if the cloud_mask_args parameter can be set (not if it works)"""
-    output = ptjpl.Image.from_landsat_c2_sr(
+    output = model.Image.from_landsat_c2_sr(
         'LANDSAT/LC08/C02/T1_L2/LC08_044033_20170716',
         cloudmask_args={'snow_flag': True, 'cirrus_flag': True}
     )
@@ -871,7 +871,7 @@ def test_Image_from_landsat_c2_sr_cloud_mask_args():
 
 def test_Image_from_landsat_c2_sr_cloud_score_mask_arg():
     """Test if the cloud_score_flag parameter can be set in cloudmask_args"""
-    output = ptjpl.Image.from_landsat_c2_sr(
+    output = model.Image.from_landsat_c2_sr(
         'LANDSAT/LC08/C02/T1_L2/LC08_044033_20170716',
         cloudmask_args={'cloud_score_flag': True, 'cloud_score_pct': 50})
     assert type(output) == type(default_image_obj())
@@ -879,7 +879,7 @@ def test_Image_from_landsat_c2_sr_cloud_score_mask_arg():
 
 def test_Image_from_landsat_c2_sr_c2_lst_correct_arg():
     """Test if the c2_lst_correct parameter can be set (not if it works)"""
-    output = ptjpl.Image.from_landsat_c2_sr(
+    output = model.Image.from_landsat_c2_sr(
         'LANDSAT/LC08/C02/T1_L2/LC08_031034_20160702', c2_lst_correct=True)
     assert type(output) == type(default_image_obj())
 
@@ -891,13 +891,32 @@ def test_Image_from_landsat_c2_sr_c2_lst_correct_fill():
 
     # CGM - Is the uncorrected test needed?
     uncorrected = utils.point_image_value(
-        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=False).LST, xy)
+        model.Image.from_landsat_c2_sr(image_id, c2_lst_correct=False).LST, xy)
     assert uncorrected['lst'] is None
     corrected = utils.point_image_value(
-        ptjpl.Image.from_landsat_c2_sr(image_id, c2_lst_correct=True).LST, xy)
+        model.Image.from_landsat_c2_sr(image_id, c2_lst_correct=True).LST, xy)
     assert corrected['lst'] > 0
     # # Exact test values copied from openet-core
     # assert abs(corrected['lst'] - 306.83) <= 0.25
+
+
+def test_Image_from_landsat_c2_sr_lst_source_arg():
+    """Test if the lst_source parameter can be set (not if it works)"""
+    image_id = 'LANDSAT/LC08/C02/T1_L2/LC08_031035_20160702'
+    output = model.Image.from_landsat_c2_sr(
+        image_id, lst_source='projects/openet/assets/lst/landsat/c02')
+    assert type(output) == type(default_image_obj())
+
+
+def test_Image_from_landsat_c2_sr_lst_source_values():
+    """Test if the lst_source image can be read"""
+    image_id = 'LANDSAT/LC08/C02/T1_L2/LC08_031035_20160702'
+    xy = (-102.4, 36.1)
+    lst_source = 'projects/openet/assets/lst/landsat/c02'
+    output_img = model.Image.from_landsat_c2_sr(image_id, lst_source=lst_source).LST
+    output = utils.point_image_value(output_img, xy)
+    assert abs(output['lst'] - 322.8) <= 0.1
+    # assert output_img.get('lst_source_id').getInfo().startswith(lst_source)
 
 
 @pytest.mark.parametrize(
@@ -909,14 +928,14 @@ def test_Image_from_landsat_c2_sr_c2_lst_correct_fill():
 )
 def test_Image_from_image_id(image_id):
     """Test instantiating the class using the from_image_id method"""
-    output = utils.getinfo(ptjpl.Image.from_image_id(image_id).NDVI)
+    output = utils.getinfo(model.Image.from_image_id(image_id).NDVI)
     assert output['properties']['system:index'] == image_id.split('/')[-1]
     assert output['properties']['image_id'] == image_id
 
 
 def test_Image_from_method_kwargs():
     """Test that the init parameters can be passed through the helper methods"""
-    assert ptjpl.Image.from_landsat_c2_sr(
+    assert model.Image.from_landsat_c2_sr(
         'LANDSAT/LC08/C02/T1_L2/LC08_042035_20150713',
         ea_source='FOO').ea_source == 'FOO'
 
@@ -969,10 +988,7 @@ def test_Model_crop_type_source_cdl_image_exception():
 @pytest.mark.parametrize(
     'crop_type_source',
     [
-        'projects/openet/assets/crop_type/v2023a',
-        'projects/openet/assets/crop_type/v2021a',
-        # 'projects/openet/crop_type/v2021a',
-        # 'projects/earthengine-legacy/assets/projects/openet/crop_type/v2021a',
+        'projects/openet/assets/crop_type/v2024a',
     ]
 )
 def test_Model_crop_type_source_openet_crop_type(crop_type_source):
@@ -986,10 +1002,8 @@ def test_Model_crop_type_source_openet_crop_type(crop_type_source):
     [
         ['USDA/NASS/CDL', TEST_POINT, 36],
         ['USDA/NASS/CDL/2016', TEST_POINT, 36],
-        ['projects/openet/assets/crop_type/v2023a', TEST_POINT, 47],
-        ['projects/openet/assets/crop_type/v2021a', TEST_POINT, 47],
-        # ['projects/openet/crop_type/v2021a', TEST_POINT, 47],
-        # ['projects/earthengine-legacy/assets/projects/openet/crop_type/v2021a', TEST_POINT, 47],
+        ['projects/openet/assets/crop_type/v2024b', TEST_POINT, 47],
+        ['projects/openet/assets/crop_type/v2024a', TEST_POINT, 47],
     ]
 )
 def test_Model_crop_type_values(crop_type_source, xy, expected):
@@ -1031,10 +1045,10 @@ def test_Model_crop_pm_adjust_constant_value():
 @pytest.mark.parametrize(
     'crop_pm_adjust_source, xy, expected',
     [
-        ['projects/openet/assets/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
-         TEST_POINT, 1.3024652077503645],
-        # ['projects/openet/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
-        #  TEST_POINT, 1.3024652077503645],
+        [
+            'projects/openet/assets/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
+            TEST_POINT, 1.3024652077503645
+        ],
     ]
 )
 def test_Model_crop_pm_adjust_values(crop_pm_adjust_source, xy, expected, tol=0.001):
@@ -1055,14 +1069,14 @@ def test_Model_crop_pm_adjust_values(crop_pm_adjust_source, xy, expected, tol=0.
     [
         [True, 2, TEST_POINT, 2 * 6.128485756837151],
         [False, 2, TEST_POINT, 6.128485756837151],
-        [True, 'projects/openet/assets/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
-         TEST_POINT, 6.128485756837151 * 1.302],
-        [False, 'projects/openet/assets/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
-         TEST_POINT, 6.128485756837151],
-        # [True, 'projects/openet/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
-        #  TEST_POINT, 6.128485756837151 * 1.302],
-        # [False, 'projects/openet/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
-        #  TEST_POINT, 6.128485756837151],
+        [
+            True, 'projects/openet/assets/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
+            TEST_POINT, 6.128485756837151 * 1.302
+        ],
+        [
+            False, 'projects/openet/assets/ptjpl/ancillary/alpha/gridmet_1980-2020_dgs',
+            TEST_POINT, 6.128485756837151
+        ],
     ]
 )
 def test_Model_et_crop_pm_adjust_flag(crop_pm_adjust_flag, crop_pm_adjust_source,
